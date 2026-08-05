@@ -1,0 +1,1601 @@
+<style>
+  @font-face{
+    font-family:'Baloo Display';
+    font-weight:500 800;
+    font-style:normal;
+    font-display:swap;
+    src:url(data:font/woff2;base64,__BALOO_B64__) format('woff2');
+  }
+  @font-face{
+    font-family:'Inter Var';
+    font-weight:400 800;
+    font-style:normal;
+    font-display:swap;
+    src:url(data:font/woff2;base64,__INTER_B64__) format('woff2');
+  }
+  @font-face{
+    font-family:'Source Serif Display';
+    font-weight:600 700;
+    font-style:normal;
+    font-display:swap;
+    src:url(data:font/woff2;base64,__SOURCESERIF_B64__) format('woff2');
+  }
+  @font-face{
+    font-family:'Space Grotesk Display';
+    font-weight:600 700;
+    font-style:normal;
+    font-display:swap;
+    src:url(data:font/woff2;base64,__SPACEGROTESK_B64__) format('woff2');
+  }
+
+  :root{
+    --bg:#0a0a0d;
+    --surface:#16161c;
+    --surface-2:#1e1e26;
+    --surface-3:#26262f;
+    --pink:#ff1f7d;
+    --pink-soft:#ff6fb0;
+    --pink-dim:rgba(255,31,125,0.16);
+    --pink-glow:rgba(255,31,125,0.55);
+    --pink-deep:#7a1140;
+    --white:#ffffff;
+    --off:#cfcfd6;
+    --muted:#8b8b96;
+    --line:#29292f;
+    --success:#34d399;
+    --pending:#f6b93b;
+    --pending-dim:rgba(246,185,59,0.14);
+    --display:'Baloo Display','Baloo 2',system-ui,sans-serif;
+    --body:'Inter Var','Inter',system-ui,sans-serif;
+  }
+  :root[data-app-theme="golden"]{
+    --bg: oklch(97% 0.014 75);
+    --surface: oklch(99% 0.006 75);
+    --surface-2: oklch(99% 0.006 75);
+    --surface-3: oklch(94% 0.016 72);
+    --pink: oklch(56% 0.14 40);
+    --pink-soft: oklch(64% 0.12 44);
+    --pink-deep: oklch(35% 0.10 45);
+    --pink-dim: oklch(90% 0.05 45 / 32%);
+    --pink-glow: oklch(56% 0.14 40 / 32%);
+    --white: oklch(22% 0.02 55);
+    --off: oklch(35% 0.02 55);
+    --muted: oklch(52% 0.02 55);
+    --line: oklch(90% 0.012 70);
+    --display:'Source Serif Display','Source Serif 4',Georgia,serif;
+    --body:'Inter Var','Inter',system-ui,sans-serif;
+  }
+  :root[data-app-theme="night"]{
+    --bg: oklch(20% 0.02 40);
+    --surface: oklch(26% 0.02 40);
+    --surface-2: oklch(26% 0.02 40);
+    --surface-3: oklch(35% 0.06 50);
+    --pink: oklch(72% 0.13 55);
+    --pink-soft: oklch(85% 0.08 55);
+    --pink-deep: oklch(45% 0.10 50);
+    --pink-dim: oklch(35% 0.08 50 / 40%);
+    --pink-glow: oklch(72% 0.13 55 / 35%);
+    --white: oklch(96% 0.01 60);
+    --off: oklch(85% 0.02 55);
+    --muted: oklch(65% 0.02 50);
+    --line: oklch(32% 0.02 40);
+    --display:'Space Grotesk Display','Space Grotesk',system-ui,sans-serif;
+    --body:'Inter Var','Inter',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0;}
+  body{
+    background:#000;
+    font-family:var(--body);
+    color:var(--white);
+    -webkit-font-smoothing:antialiased;
+  }
+  :focus-visible{ outline:2px solid var(--pink-soft); outline-offset:2px; }
+
+  .stage{
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:14px;
+    padding:32px 12px 40px;
+    background:
+      radial-gradient(600px 400px at 20% 10%, color-mix(in srgb, var(--pink) 10%, transparent), transparent 60%),
+      radial-gradient(500px 400px at 85% 90%, color-mix(in srgb, var(--pink-soft) 8%, transparent), transparent 60%),
+      #050506;
+  }
+  .stage-note{
+    font-family:var(--body); font-size:12.5px; color:#6f6f78; text-align:center;
+    max-width:340px; line-height:1.5;
+  }
+  .stage-note b{ color:#a8a8b2; }
+
+  .phone{
+    width:390px; height:820px;
+    background:var(--bg);
+    border-radius:44px;
+    border:1px solid #2c2c33;
+    box-shadow:0 0 0 8px #0c0c0f, 0 30px 80px rgba(0,0,0,0.6), 0 0 60px color-mix(in srgb, var(--pink) 6%, transparent);
+    overflow:hidden;
+    position:relative;
+    display:flex;
+    flex-direction:column;
+  }
+  .notch{
+    position:absolute; top:10px; left:50%; transform:translateX(-50%);
+    width:120px; height:26px; background:#000; border-radius:20px; z-index:80;
+  }
+  .status{
+    height:46px; flex:none; display:flex; align-items:center; justify-content:space-between;
+    padding:0 26px; font-size:13px; font-weight:600; color:var(--white); letter-spacing:0.2px;
+    font-variant-numeric:tabular-nums; position:relative; z-index:70;
+  }
+  .live-badge{
+    position:absolute; top:50px; right:14px; z-index:65; font-size:10.5px; font-weight:700; color:var(--success);
+    background:color-mix(in srgb, var(--bg) 85%, transparent); border:1px solid var(--line); padding:5px 10px 5px 8px;
+    border-radius:100px; display:none; align-items:center; gap:5px; font-family:var(--body);
+  }
+  .live-badge.show{ display:flex; }
+  .live-dot{ width:6px; height:6px; border-radius:50%; background:var(--success); box-shadow:0 0 6px var(--success); flex:none; }
+
+  .screen{ flex:1; overflow-y:auto; overflow-x:hidden; position:relative; scrollbar-width:none; }
+  .screen::-webkit-scrollbar{ display:none; }
+  .screen{ padding-bottom:8px; }
+
+  /* ---------- splash ---------- */
+  .splash{
+    flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:32px 30px; text-align:center; gap:22px;
+  }
+  .splash-logo{ width:260px; height:auto; display:block; mix-blend-mode:screen; }
+  .splash-tag{
+    font-family:var(--display); font-weight:600; font-size:19px; line-height:1.35;
+    color:var(--white); max-width:280px; text-wrap:balance;
+  }
+  .splash-sub{ font-size:13.5px; color:var(--muted); line-height:1.5; max-width:270px; }
+  .splash-cta{
+    margin-top:6px; width:100%; max-width:270px; padding:16px; border-radius:18px; border:none;
+    background:var(--pink); color:#fff; font-family:var(--body); font-weight:700; font-size:15px;
+    cursor:pointer; box-shadow:0 10px 30px color-mix(in srgb, var(--pink) 40%, transparent);
+  }
+  .splash-ghost{
+    background:none; border:none; color:var(--muted); font-size:13px; font-weight:600; cursor:pointer;
+    text-decoration:underline; text-underline-offset:3px;
+  }
+  .theme-picker{ margin-top:30px; width:100%; max-width:300px; }
+  .theme-picker-label{ font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--muted); margin-bottom:12px; }
+  .theme-swatches{ display:flex; gap:10px; justify-content:center; }
+  .theme-swatch{ flex:1; display:flex; flex-direction:column; align-items:center; gap:7px; background:none; border:none; cursor:pointer; padding:0; font-family:var(--body); }
+  .theme-swatch-preview{
+    width:100%; height:52px; border-radius:14px; border:2px solid var(--line); display:flex; align-items:center;
+    justify-content:center; overflow:hidden; transition:border-color .15s, box-shadow .15s;
+  }
+  .theme-swatch.active .theme-swatch-preview{ border-color:var(--pink); box-shadow:0 0 0 3px var(--pink-dim); }
+  .theme-swatch-preview img{ height:15px; width:auto; }
+  .theme-swatch-name{ font-size:10.5px; font-weight:600; color:var(--muted); }
+  .theme-swatch.active .theme-swatch-name{ color:var(--white); }
+
+  /* ---------- top bar ---------- */
+  .topbar{ padding:6px 20px 14px; display:flex; align-items:center; justify-content:space-between; }
+  .brand-logo{ height:44px; width:auto; display:block; mix-blend-mode:screen; margin:-4px 0; }
+  .brand-text{ font-family:var(--display); font-weight:700; font-size:19px; color:var(--white); }
+  .city-pill{
+    font-size:12px; color:var(--muted); background:var(--surface-2); border:1px solid var(--line);
+    padding:6px 12px; border-radius:100px; display:flex; align-items:center; gap:6px; font-weight:600; flex:none;
+    cursor:pointer;
+  }
+
+  /* ---------- availability card ---------- */
+  .avail-card{
+    margin:6px 20px 14px; border-radius:26px; padding:22px 20px;
+    background:linear-gradient(160deg, var(--surface-2), var(--surface));
+    border:1px solid var(--line); position:relative; overflow:hidden;
+  }
+  .avail-card::before{
+    content:''; position:absolute; inset:-40% -40% auto auto; width:220px; height:220px;
+    background:radial-gradient(circle, var(--pink-glow), transparent 70%); opacity:.35; filter:blur(10px);
+  }
+  .avail-label{ font-size:12px; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:1px; }
+  .avail-row{ display:flex; align-items:center; justify-content:space-between; margin-top:10px; }
+  .avail-title{ font-family:var(--display); font-size:21px; font-weight:600; }
+  .intent-select{ margin-top:14px; display:flex; gap:8px; flex-wrap:wrap; }
+  .chip{
+    font-size:13px; font-weight:600; padding:8px 14px; border-radius:100px; border:1px solid var(--line);
+    background:var(--surface-3); color:var(--off); cursor:pointer; transition:.15s; font-family:var(--body);
+  }
+  .chip.active{ background:var(--pink); border-color:var(--pink); color:#fff; box-shadow:0 0 18px var(--pink-glow); }
+
+  .toggle-wrap{ display:flex; align-items:center; gap:10px; }
+  .toggle{
+    width:52px; height:30px; border-radius:100px; background:var(--surface-3); border:1px solid var(--line);
+    position:relative; cursor:pointer; transition:.2s; flex:none;
+  }
+  .toggle.on{ background:var(--pink); border-color:var(--pink); box-shadow:0 0 16px var(--pink-glow); }
+  .toggle .knob{ position:absolute; top:3px; left:3px; width:22px; height:22px; border-radius:50%; background:#fff; transition:.2s cubic-bezier(.4,0,.2,1); }
+  .toggle.on .knob{ left:25px; }
+  .pulse-ring{ position:absolute; inset:0; border-radius:26px; pointer-events:none; box-shadow:0 0 0 0 var(--pink-glow); }
+  .pulse-ring.on{ animation:pulse 2.2s infinite; }
+  @keyframes pulse{
+    0%{ box-shadow:0 0 0 0 color-mix(in srgb, var(--pink) 35%, transparent); }
+    70%{ box-shadow:0 0 0 14px transparent; }
+    100%{ box-shadow:0 0 0 0 transparent; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .pulse-ring.on{ animation:none; }
+    *{ transition-duration:.001ms !important; animation-duration:.001ms !important; }
+  }
+
+  @media (max-width: 480px){
+    .stage{ padding:0; min-height:100vh; min-height:100dvh; }
+    .stage-note{ display:none; }
+    .phone{
+      width:100vw; height:100vh; height:100dvh; border-radius:0; border:none; box-shadow:none;
+    }
+    .notch{ display:none; }
+  }
+
+  /* ---------- section label + view switch ---------- */
+  .section-label{
+    padding:4px 20px 10px; font-size:12px; font-weight:700; color:var(--muted);
+    text-transform:uppercase; letter-spacing:1px; display:flex; justify-content:space-between; align-items:center;
+  }
+  .view-switch{
+    margin:0 20px 12px; display:flex; background:var(--surface-2); border:1px solid var(--line);
+    border-radius:100px; padding:3px;
+  }
+  .view-btn{
+    flex:1; text-align:center; padding:8px 0; border-radius:100px; font-size:12.5px; font-weight:700;
+    color:var(--muted); cursor:pointer; font-family:var(--body);
+  }
+  .view-btn.active{ background:var(--surface-3); color:var(--white); }
+
+  /* ---------- people list ---------- */
+  .people{ padding:0 20px; display:flex; flex-direction:column; gap:12px; }
+  .person-card{
+    display:flex; gap:12px; padding:14px; border-radius:20px; background:var(--surface); border:1px solid var(--line);
+    cursor:pointer; transition:.15s;
+  }
+  .person-card:active{ transform:scale(0.98); }
+  .p-avatar{
+    width:56px; height:56px; border-radius:16px; flex:none; display:flex; align-items:center; justify-content:center;
+    font-family:var(--display); font-size:20px; font-weight:700; color:#fff; position:relative;
+  }
+  .dot-online{ position:absolute; bottom:-2px; right:-2px; width:14px; height:14px; border-radius:50%; background:var(--success); border:3px solid var(--surface); }
+  .p-body{ flex:1; min-width:0; }
+  .p-top{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .p-name{ font-weight:700; font-size:15px; }
+  .p-dist{ font-size:12px; color:var(--muted); font-weight:600; flex:none; font-variant-numeric:tabular-nums; }
+  .p-bio{ font-size:13px; color:var(--off); margin-top:3px; line-height:1.35; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .p-tags{ display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
+  .tag{ font-size:11px; font-weight:700; padding:4px 9px; border-radius:100px; background:var(--pink-dim); color:var(--pink-soft); }
+  .tag.time{ background:var(--surface-3); color:var(--muted); }
+
+  /* ---------- upcoming plans ---------- */
+  .plan-card{
+    display:flex; gap:12px; padding:14px; border-radius:20px; background:var(--surface); border:1px dashed var(--line);
+    cursor:pointer; transition:.15s; align-items:center;
+  }
+  .plan-card:active{ transform:scale(0.98); }
+  .plan-icon{
+    width:44px; height:44px; border-radius:14px; flex:none; display:flex; align-items:center; justify-content:center;
+    background:var(--pink-dim); font-size:18px;
+  }
+  .plan-name{ font-weight:700; font-size:14px; }
+  .plan-meta{ font-size:12px; color:var(--muted); margin-top:2px; line-height:1.4; }
+
+  /* ---------- map view ---------- */
+  .map-wrap{ margin:0 20px 16px; border-radius:24px; overflow:hidden; border:1px solid var(--line); position:relative; height:420px; background:var(--surface-3); }
+  .map-grid{
+    position:absolute; inset:0;
+    background-image:
+      radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--pink) 10%, transparent), transparent 55%),
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.035) 0 1px, transparent 1px 34px),
+      repeating-linear-gradient(90deg, rgba(255,255,255,0.035) 0 1px, transparent 1px 34px);
+  }
+  .map-ring{
+    position:absolute; top:42%; left:50%; transform:translate(-50%,-50%); border-radius:50%;
+    border:1px solid color-mix(in srgb, var(--pink) 18%, transparent);
+  }
+  .map-me{
+    position:absolute; top:42%; left:50%; transform:translate(-50%,-50%); width:14px; height:14px; border-radius:50%;
+    background:var(--pink); box-shadow:0 0 0 6px color-mix(in srgb, var(--pink) 22%, transparent), 0 0 18px var(--pink-glow); z-index:5;
+  }
+  .map-pin{
+    position:absolute; width:38px; height:38px; border-radius:14px 14px 14px 4px; transform:translate(-50%,-100%) rotate(-45deg);
+    display:flex; align-items:center; justify-content:center; cursor:pointer; border:2px solid rgba(0,0,0,0.25);
+    box-shadow:0 6px 16px rgba(0,0,0,0.45);
+  }
+  .map-pin span{ transform:rotate(45deg); font-family:var(--display); font-size:13px; font-weight:700; color:#fff; }
+  .map-pin::after{ content:''; }
+  .map-label{
+    position:absolute; bottom:14px; left:14px; right:14px; display:flex; align-items:center; justify-content:space-between;
+    font-size:11.5px; color:var(--muted); font-weight:600; z-index:4;
+  }
+  .map-badge{ background:color-mix(in srgb, var(--bg) 75%, transparent); backdrop-filter:blur(6px); padding:6px 10px; border-radius:100px; border:1px solid var(--line); }
+
+  /* ---------- bottom nav ---------- */
+  .navbar{
+    flex:none; display:flex; align-items:center; justify-content:space-around;
+    padding:10px 10px 22px; background:color-mix(in srgb, var(--bg) 90%, transparent); backdrop-filter:blur(10px);
+    border-top:1px solid var(--line);
+  }
+  .navitem{ display:flex; flex-direction:column; align-items:center; gap:4px; color:var(--muted); font-size:10.5px; font-weight:700; cursor:pointer; padding:4px 10px; background:none; border:none; font-family:var(--body); }
+  .navitem.active{ color:var(--pink); }
+  .navitem svg{ width:22px; height:22px; }
+
+  /* ---------- bottom sheet ---------- */
+  .sheet-backdrop{ position:absolute; inset:0; background:rgba(0,0,0,0.55); z-index:80; opacity:0; pointer-events:none; transition:.2s; }
+  .sheet-backdrop.open{ opacity:1; pointer-events:all; }
+  .sheet{
+    position:absolute; left:0; right:0; bottom:0; z-index:81; background:var(--surface);
+    border-radius:28px 28px 0 0; padding:8px 22px 26px; transform:translateY(100%); transition:.28s cubic-bezier(.2,.8,.2,1);
+    border-top:1px solid var(--line); max-height:88%; overflow-y:auto;
+  }
+  .sheet.open{ transform:translateY(0); }
+  .sheet-handle{ width:40px; height:4px; background:var(--line); border-radius:10px; margin:10px auto 16px; }
+  .sheet-hero{ display:flex; gap:14px; align-items:center; }
+  .sheet-avatar{ width:70px; height:70px; border-radius:20px; display:flex; align-items:center; justify-content:center; font-family:var(--display); font-size:26px; font-weight:700; color:#fff; flex:none; }
+  .sheet-name{ font-family:var(--display); font-size:20px; font-weight:600; }
+  .sheet-meta{ font-size:12.5px; color:var(--muted); margin-top:2px; font-weight:600; }
+  .sheet-section{ margin-top:20px; }
+  .sheet-section h4{ font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--muted); margin:0 0 8px; }
+  .sheet-text{ font-size:14px; color:var(--off); line-height:1.5; }
+  .btn-row{ display:flex; gap:10px; margin-top:22px; }
+  .btn{ flex:1; text-align:center; padding:14px; border-radius:16px; font-weight:700; font-size:14.5px; cursor:pointer; border:none; font-family:var(--body); }
+  .btn-primary{ background:var(--pink); color:#fff; box-shadow:0 8px 24px color-mix(in srgb, var(--pink) 35%, transparent); }
+  .btn-ghost{ background:var(--surface-3); color:var(--off); }
+
+  /* ---------- meeting confirm ---------- */
+  .venue-card{
+    margin-top:12px; padding:16px; border-radius:20px; background:var(--surface-2); border:1px solid var(--line);
+    display:flex; gap:12px; align-items:center;
+  }
+  .venue-icon{ width:46px; height:46px; border-radius:14px; background:var(--surface-3); display:flex; align-items:center; justify-content:center; font-size:20px; flex:none; }
+  .venue-name{ font-weight:700; font-size:14.5px; }
+  .venue-meta{ font-size:12px; color:var(--muted); margin-top:2px; font-weight:600; }
+  .venue-swap{ font-size:12px; color:var(--pink-soft); font-weight:700; cursor:pointer; margin-top:10px; display:inline-block; }
+  .time-row{ display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
+  .gmaps-embed{ width:100%; height:170px; border:0; border-radius:16px; margin-top:10px; display:block; background:var(--surface-3); }
+  .filter-row{ display:flex; gap:8px; margin:0 20px 12px; }
+  .filter-row .field-input{ flex:1; padding:9px 12px; font-size:13px; }
+
+  /* ---------- messages screen ---------- */
+  .msg-item{ display:flex; gap:12px; padding:14px 20px; align-items:center; cursor:pointer; border-bottom:1px solid var(--line); background:none; border-left:none; border-right:none; border-top:none; width:100%; text-align:left; color:inherit; font-family:var(--body); }
+  .msg-body{ flex:1; min-width:0; }
+  .msg-top{ display:flex; justify-content:space-between; }
+  .msg-name{ font-weight:700; font-size:14.5px; }
+  .msg-time{ font-size:11.5px; color:var(--muted); font-weight:600; }
+  .msg-preview{ font-size:13px; color:var(--muted); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .msg-badge{ width:8px; height:8px; border-radius:50%; background:var(--pink); flex:none; box-shadow:0 0 8px var(--pink-glow); }
+
+  .empty{ text-align:center; padding:60px 30px; color:var(--muted); }
+  .empty h3{ color:var(--white); font-family:var(--display); font-weight:600; font-size:17px; margin-bottom:6px; }
+  .empty p{ font-size:13.5px; line-height:1.5; }
+
+  /* ---------- thread ---------- */
+  .thread{
+    position:absolute; inset:0; z-index:70; background:var(--bg); display:flex; flex-direction:column;
+    transform:translateX(100%); transition:.26s cubic-bezier(.2,.8,.2,1);
+  }
+  .thread.open{ transform:translateX(0); }
+  .thread-head{ flex:none; display:flex; align-items:center; gap:12px; padding:14px 16px; border-bottom:1px solid var(--line); }
+  .thread-back{ width:34px; height:34px; border-radius:12px; background:var(--surface-2); border:none; color:var(--white); display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none; }
+  .thread-name{ font-family:var(--display); font-weight:600; font-size:15.5px; }
+  .thread-sub{ font-size:11.5px; color:var(--success); font-weight:600; }
+  .thread-body{ flex:1; overflow-y:auto; padding:18px 16px; display:flex; flex-direction:column; gap:10px; scrollbar-width:none; }
+  .thread-body::-webkit-scrollbar{ display:none; }
+  .bubble{ max-width:76%; padding:11px 14px; border-radius:18px; font-size:13.5px; line-height:1.45; }
+  .bubble.them{ align-self:flex-start; background:var(--surface-2); border:1px solid var(--line); border-bottom-left-radius:4px; }
+  .bubble.me{ align-self:flex-end; background:var(--pink); color:#fff; border-bottom-right-radius:4px; }
+  .bubble.system{ align-self:center; background:var(--pink-dim); color:var(--pink-soft); font-weight:700; font-size:12px; text-align:center; border-radius:100px; padding:8px 16px; }
+  .thread-input{ flex:none; display:flex; gap:8px; padding:10px 14px 18px; border-top:1px solid var(--line); }
+  .thread-field{ flex:1; background:var(--surface-2); border:1px solid var(--line); border-radius:100px; padding:11px 16px; color:var(--white); font-size:13.5px; font-family:var(--body); }
+  .thread-field::placeholder{ color:var(--muted); }
+  .thread-send{ width:42px; height:42px; border-radius:50%; background:var(--pink); border:none; color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none; }
+  .thread-actions{ flex:none; padding:0 16px 10px; }
+  .thread-propose{
+    width:100%; padding:12px; border-radius:14px; background:var(--surface-2); border:1px dashed var(--pink);
+    color:var(--pink-soft); font-weight:700; font-size:13px; cursor:pointer; font-family:var(--body);
+  }
+  .pending-card{ margin:auto; text-align:center; padding:26px 24px; max-width:280px; }
+  .pending-card .p-avatar{ margin:0 auto 14px; width:60px; height:60px; }
+  .pending-title{ font-family:var(--display); font-weight:600; font-size:16px; text-wrap:balance; }
+  .pending-sub{ font-size:12.5px; color:var(--muted); margin-top:8px; line-height:1.55; }
+  .demo-btn{
+    margin-top:18px; padding:11px 18px; border-radius:100px; border:1px dashed var(--pending);
+    background:var(--pending-dim); color:var(--pending); font-weight:700; font-size:12.5px; cursor:pointer; font-family:var(--body);
+  }
+  .demo-flag{ font-size:10px; text-transform:uppercase; letter-spacing:.6px; color:var(--pending); font-weight:700; margin-top:10px; display:block; }
+
+  /* ---------- profile editor ---------- */
+  .editor{
+    position:absolute; inset:0; z-index:75; background:var(--bg); display:flex; flex-direction:column;
+    transform:translateY(100%); transition:.28s cubic-bezier(.2,.8,.2,1);
+  }
+  .editor.open{ transform:translateY(0); }
+  .editor-head{ flex:none; display:flex; align-items:center; gap:12px; padding:14px 16px; border-bottom:1px solid var(--line); }
+  .editor-title{ font-family:var(--display); font-weight:600; font-size:16px; }
+  .editor-body{ flex:1; overflow-y:auto; padding:20px 20px 110px; scrollbar-width:none; }
+  .editor-body::-webkit-scrollbar{ display:none; }
+  .field-group{ margin-bottom:22px; }
+  .field-label{ font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--muted); font-weight:700; margin-bottom:8px; display:block; }
+  .field-input, .field-textarea{ width:100%; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:12px 14px; color:var(--white); font-size:14px; font-family:var(--body); }
+  .field-textarea{ min-height:84px; resize:vertical; line-height:1.5; }
+  .field-input::placeholder, .field-textarea::placeholder{ color:var(--muted); }
+  .chip-group{ display:flex; gap:8px; flex-wrap:wrap; }
+  .photo-row{ display:flex; align-items:center; gap:16px; }
+  .photo-preview{ width:76px; height:76px; border-radius:22px; background:linear-gradient(135deg,var(--pink),var(--pink-deep)); display:flex; align-items:center; justify-content:center; font-family:var(--display); font-size:26px; font-weight:700; overflow:hidden; flex:none; }
+  .photo-preview img{ width:100%; height:100%; object-fit:cover; }
+  .photo-btn{ background:var(--surface-3); border:1px solid var(--line); color:var(--off); font-weight:700; font-size:12.5px; padding:10px 16px; border-radius:100px; cursor:pointer; font-family:var(--body); display:inline-block; }
+  .verify-card{ background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:16px; display:flex; gap:12px; align-items:flex-start; }
+  .verify-card p{ font-size:12.5px; color:var(--muted); line-height:1.5; margin:4px 0 0; }
+  .editor-foot{ position:absolute; left:0; right:0; bottom:0; padding:16px 20px 24px; background:linear-gradient(180deg, transparent, var(--bg) 32%); }
+  .save-btn{ width:100%; padding:15px; border-radius:16px; border:none; background:var(--pink); color:#fff; font-weight:700; font-size:14.5px; cursor:pointer; box-shadow:0 10px 26px color-mix(in srgb, var(--pink) 35%, transparent); font-family:var(--body); }
+  .edit-fab{ position:absolute; bottom:-2px; right:-2px; width:30px; height:30px; border-radius:50%; background:var(--pink); border:3px solid var(--bg); display:flex; align-items:center; justify-content:center; font-size:12px; cursor:pointer; }
+
+  /* ---------- profile (own) screen ---------- */
+  .profile-hero{ padding:10px 20px 20px; text-align:center; }
+  .profile-avatar{ width:88px; height:88px; margin:0 auto 12px; border-radius:24px; background:linear-gradient(135deg,var(--pink),var(--pink-deep)); display:flex; align-items:center; justify-content:center; font-family:var(--display); font-size:32px; font-weight:700; box-shadow:0 0 30px var(--pink-glow); overflow:hidden; }
+  .profile-name{ font-family:var(--display); font-size:20px; font-weight:600; }
+  .profile-sub{ font-size:12.5px; color:var(--muted); margin-top:2px; font-weight:600; }
+  .stat-row{ display:flex; gap:10px; padding:0 20px 18px; }
+  .stat{ flex:1; background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:12px; text-align:center; }
+  .stat b{ display:block; font-family:var(--display); font-size:18px; font-weight:600; font-variant-numeric:tabular-nums; }
+  .stat span{ font-size:10.5px; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:.5px; }
+  .list-item{ display:flex; align-items:center; justify-content:space-between; padding:15px 20px; border-bottom:1px solid var(--line); cursor:pointer; }
+  .list-left{ display:flex; align-items:center; gap:12px; font-size:14px; font-weight:600; }
+  .icon-box{ width:34px; height:34px; border-radius:10px; background:var(--surface-3); display:flex; align-items:center; justify-content:center; }
+  .chev{ color:var(--muted); }
+  .premium-banner{ margin:16px 20px; padding:18px; border-radius:20px; background:linear-gradient(135deg, color-mix(in srgb, var(--pink) 18%, transparent), color-mix(in srgb, var(--pink-soft) 6%, transparent)); border:1px solid color-mix(in srgb, var(--pink) 35%, transparent); display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .premium-banner b{ font-family:var(--display); font-size:15px; font-weight:600; }
+  .premium-banner p{ font-size:12px; color:var(--off); margin:3px 0 0; }
+  .premium-cta{ background:var(--pink); color:#fff; font-weight:700; font-size:12.5px; padding:9px 14px; border-radius:100px; flex:none; }
+
+  .hint{ text-align:center; font-size:11.5px; color:var(--muted); padding:10px 30px 2px; }
+
+  .toast{
+    position:absolute; left:50%; bottom:104px; transform:translate(-50%,10px); z-index:90;
+    background:var(--surface-3); border:1px solid var(--line); color:var(--white); font-size:12.5px; font-weight:600;
+    padding:10px 16px; border-radius:100px; opacity:0; pointer-events:none; transition:.2s; white-space:nowrap;
+  }
+  .toast.show{ opacity:1; transform:translate(-50%,0); }
+</style>
+
+<div class="stage">
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="live-badge" id="liveBadge"><span class="live-dot"></span>En direct</div>
+    <div class="status">
+      <span>9:41</span>
+      <span>&#128246; EatSolo</span>
+    </div>
+
+    <!-- ============ SPLASH ============ -->
+    <div class="screen" id="screen-splash">
+      <div class="splash">
+        <img class="splash-logo" src="data:image/jpeg;base64,__LOGO_B64__" alt="EatSolo">
+        <div class="splash-tag">Je suis seul, mais je ne veux pas manger seul.</div>
+        <div class="splash-sub">Trouve quelqu'un de dispo pr&egrave;s de toi, l&agrave; maintenant &mdash; caf&eacute;, d&eacute;jeuner, d&icirc;ner ou verre. Pas d'&eacute;v&eacute;nement, pas d'attente.</div>
+        <button class="splash-cta" onclick="startSignup()">S'inscrire</button>
+        <button class="splash-ghost" onclick="enterApp()">J'ai d&eacute;j&agrave; un compte</button>
+
+        <div class="theme-picker">
+          <div class="theme-picker-label">Ton ambiance</div>
+          <div class="theme-swatches">
+            <button class="theme-swatch active" id="themeSwatch-neon" onclick="setAppTheme('neon')">
+              <span class="theme-swatch-preview" style="background:#0a0a0d;"><img id="swatchImg-neon" src="data:image/jpeg;base64,__LOGO_B64__" alt="" style="mix-blend-mode:screen;"></span>
+              <span class="theme-swatch-name">N&eacute;on</span>
+            </button>
+            <button class="theme-swatch" id="themeSwatch-golden" onclick="setAppTheme('golden')">
+              <span class="theme-swatch-preview" style="background:#f2efe8;"><img id="swatchImg-golden" src="data:image/jpeg;base64,__LOGO_GOLDEN_B64__" alt="" style="mix-blend-mode:multiply;"></span>
+              <span class="theme-swatch-name">Golden Hour</span>
+            </button>
+            <button class="theme-swatch" id="themeSwatch-night" onclick="setAppTheme('night')">
+              <span class="theme-swatch-preview" style="background:#1c1712;"><img id="swatchImg-night" src="data:image/jpeg;base64,__LOGO_NIGHT_B64__" alt="" style="mix-blend-mode:screen;"></span>
+              <span class="theme-swatch-name">Night Social</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ RADAR SCREEN ============ -->
+    <div class="screen" id="screen-radar" style="display:none;">
+      <div class="topbar">
+        <img class="brand-logo" src="data:image/jpeg;base64,__LOGO_B64__" alt="EatSolo">
+        <div class="city-pill" onclick="showScreen('planifier')">&#128205; <span id="cityPillText">Lyon 2e</span></div>
+      </div>
+
+      <div style="position:relative; margin:6px 20px 18px;">
+        <div class="pulse-ring" id="pulseRing"></div>
+        <div class="avail-card" style="margin:0;">
+          <div class="avail-label">Statut</div>
+          <div class="avail-row">
+            <div class="avail-title" id="availTitle">Je suis dispo</div>
+            <div class="toggle-wrap">
+              <div class="toggle on" id="availToggle" onclick="toggleAvail()"><div class="knob"></div></div>
+            </div>
+          </div>
+          <div class="intent-select">
+            <div class="chip" data-i="cafe" onclick="setIntent(this)">&#9749; Caf&eacute;</div>
+            <div class="chip" data-i="dej" onclick="setIntent(this)">&#129367; D&eacute;jeuner</div>
+            <div class="chip active" data-i="diner" onclick="setIntent(this)">&#127837; D&icirc;ner</div>
+            <div class="chip" data-i="verre" onclick="setIntent(this)">&#127863; Verre</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="view-switch">
+        <div class="view-btn active" id="viewBtnList" onclick="setView('list')">&#9776; Liste</div>
+        <div class="view-btn" id="viewBtnMap" onclick="setView('map')">&#128506; Carte</div>
+      </div>
+
+      <div class="section-label"><span id="radarStatusLabel">Dispo pr&egrave;s de vous &middot; maintenant</span><span id="countLabel">6</span></div>
+
+      <div class="people" id="peopleList"></div>
+      <div class="map-wrap" id="mapView" style="display:none;">
+        <div class="map-grid"></div>
+        <div class="map-ring" style="width:120px;height:120px;"></div>
+        <div class="map-ring" style="width:220px;height:220px;"></div>
+        <div class="map-ring" style="width:320px;height:320px;"></div>
+        <div class="map-me"></div>
+        <div id="mapPins"></div>
+        <div class="map-label">
+          <span class="map-badge">&#128205; Lyon 2e</span>
+          <span class="map-badge" id="mapCount">6 dispo</span>
+        </div>
+      </div>
+      <div style="height:14px"></div>
+    </div>
+
+    <!-- ============ PLANIFIER SCREEN ============ -->
+    <div class="screen" id="screen-planifier" style="display:none;">
+      <div class="topbar"><div class="brand-text">Planifier</div></div>
+
+      <div class="avail-card" style="margin:6px 20px 18px;">
+        <div class="avail-label">Nouveau plan</div>
+        <div class="sheet-meta" style="font-weight:500; line-height:1.5; margin-top:8px;">Ind&eacute;pendant de ton statut "dispo maintenant" &mdash; ce plan reste visible m&ecirc;me si tu coupes le direct.</div>
+
+        <div class="field-group" style="margin-top:18px;">
+          <span class="field-label">Type de repas</span>
+          <div class="chip-group" id="planMealGroup">
+            <div class="chip" onclick="selectSingle(this,'planMealGroup'); refreshPlanMap();" data-i="cafe">&#9749; Caf&eacute;</div>
+            <div class="chip" onclick="selectSingle(this,'planMealGroup'); refreshPlanMap();" data-i="dej">&#129367; D&eacute;jeuner</div>
+            <div class="chip active" onclick="selectSingle(this,'planMealGroup'); refreshPlanMap();" data-i="diner">&#127837; D&icirc;ner</div>
+            <div class="chip" onclick="selectSingle(this,'planMealGroup'); refreshPlanMap();" data-i="verre">&#127863; Verre</div>
+          </div>
+        </div>
+        <div class="field-group">
+          <span class="field-label">Quel jour</span>
+          <div class="chip-group" id="planDayGroup">
+            <div class="chip active" onclick="selectSingle(this,'planDayGroup')">Ce soir</div>
+            <div class="chip" onclick="selectSingle(this,'planDayGroup')">Demain midi</div>
+            <div class="chip" onclick="selectSingle(this,'planDayGroup')">Demain soir</div>
+            <div class="chip" onclick="selectSingle(this,'planDayGroup')">Ce week-end</div>
+          </div>
+        </div>
+        <div class="field-group">
+          <span class="field-label">Cr&eacute;neau horaire</span>
+          <div class="chip-group" id="planSlotGroup">
+            <div class="chip" onclick="selectSingle(this,'planSlotGroup')">12h &ndash; 14h</div>
+            <div class="chip active" onclick="selectSingle(this,'planSlotGroup')">19h &ndash; 21h</div>
+            <div class="chip" onclick="selectSingle(this,'planSlotGroup')">21h &ndash; 23h</div>
+          </div>
+        </div>
+        <div class="field-group" style="display:flex; gap:14px;">
+          <div style="flex:1;">
+            <span class="field-label">Ville</span>
+            <input class="field-input" id="locCity" value="Lyon" oninput="refreshPlanMap()">
+          </div>
+          <div style="flex:1;">
+            <span class="field-label">Quartier</span>
+            <input class="field-input" id="locArea" value="2e arrondissement" oninput="refreshPlanMap()">
+          </div>
+        </div>
+        <div class="field-group">
+          <span class="field-label">Restaurant (optionnel)</span>
+          <input class="field-input" id="planRestaurant" placeholder="Nom d'un restaurant, si tu en as d&eacute;j&agrave; un en t&ecirc;te" oninput="refreshPlanMap()">
+          <iframe class="gmaps-embed" id="planMapsEmbed" src="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+          <a class="venue-swap" id="planMapsLink" href="#" target="_blank" rel="noopener" style="margin-top:10px;" onclick="return prepPlanMapsLink(this);">&#128269; Ouvrir en plein &eacute;cran sur Google Maps</a>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn btn-ghost" onclick="clearPlan()">Effacer mon plan</button>
+          <button class="btn btn-primary" onclick="applyLocation()">Enregistrer mon plan</button>
+        </div>
+      </div>
+
+      <div class="section-label"><span>&#128197; Plans &agrave; venir</span></div>
+      <div class="filter-row">
+        <input class="field-input" id="planFilterCity" placeholder="Filtrer par ville..." oninput="renderPlans()">
+        <select class="field-input" id="planFilterWhen" onchange="renderPlans()">
+          <option value="">Toutes les dates</option>
+          <option>Ce soir</option>
+          <option>Demain midi</option>
+          <option>Demain soir</option>
+          <option>Ce week-end</option>
+        </select>
+      </div>
+      <div class="people" id="plansList"></div>
+      <div style="height:14px"></div>
+    </div>
+
+    <!-- ============ MESSAGES SCREEN ============ -->
+    <div class="screen" id="screen-messages" style="display:none;">
+      <div class="topbar"><div class="brand-text">Messages</div></div>
+      <div id="msgList"></div>
+    </div>
+
+    <!-- ============ PROFILE SCREEN ============ -->
+    <div class="screen" id="screen-profile" style="display:none;">
+      <div class="topbar"><div class="brand-text">Profil</div></div>
+      <div class="profile-hero">
+        <div style="position:relative; width:88px; margin:0 auto 12px;">
+          <div class="profile-avatar" id="profileAvatar" style="margin:0;">FM</div>
+          <div class="edit-fab" onclick="openEditor()">&#9998;</div>
+        </div>
+        <div class="profile-name" id="profileName">Franck</div>
+        <div class="profile-sub" id="profileSub">32 ans &middot; R&eacute;alisateur &middot; Lyon / itin&eacute;rant</div>
+        <button class="photo-btn" style="margin-top:14px; border:1px solid var(--pink); color:var(--pink-soft);" onclick="openEditor()">Cr&eacute;er / modifier mon profil</button>
+      </div>
+      <div class="stat-row">
+        <div class="stat"><b>27</b><span>Repas</span></div>
+        <div class="stat"><b>4.9</b><span>Note</span></div>
+        <div class="stat"><b>8</b><span>Villes</span></div>
+      </div>
+      <div class="premium-banner">
+        <div><b>Passer Premium</b><p>Visibilit&eacute; prioritaire + filtres avanc&eacute;s</p></div>
+        <div class="premium-cta">4&euro;/mois</div>
+      </div>
+      <div class="list-item">
+        <div class="list-left"><div class="icon-box">&#127380;</div>Identit&eacute; v&eacute;rifi&eacute;e</div>
+        <span style="color:var(--success); font-size:12px; font-weight:700;">&#10003; Valid&eacute;e</span>
+      </div>
+      <div class="list-item">
+        <div class="list-left"><div class="icon-box">&#127869;&#65039;</div>Pr&eacute;f&eacute;rences culinaires</div>
+        <span class="chev">&rsaquo;</span>
+      </div>
+      <div class="list-item">
+        <div class="list-left"><div class="icon-box">&#128276;</div>Notifications de proximit&eacute;</div>
+        <span class="chev">&rsaquo;</span>
+      </div>
+      <div class="list-item">
+        <div class="list-left"><div class="icon-box">&#128737;&#65039;</div>Confidentialit&eacute; &amp; s&eacute;curit&eacute;</div>
+        <span class="chev">&rsaquo;</span>
+      </div>
+      <div class="list-item" style="border-bottom:none;">
+        <div class="list-left"><div class="icon-box">&#128681;</div>Signaler un probl&egrave;me</div>
+        <span class="chev">&rsaquo;</span>
+      </div>
+    </div>
+
+    <!-- ============ BOTTOM NAV ============ -->
+    <div class="navbar" id="navbar" style="display:none;">
+      <button class="navitem active" id="nav-radar" onclick="showScreen('radar')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg>
+        Radar
+      </button>
+      <button class="navitem" id="nav-planifier" onclick="showScreen('planifier')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/><circle cx="8.5" cy="14.5" r="1.2" fill="currentColor" stroke="none"/></svg>
+        Planifier
+      </button>
+      <button class="navitem" id="nav-messages" onclick="showScreen('messages')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+        Messages
+      </button>
+      <button class="navitem" id="nav-profile" onclick="showScreen('profile')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Profil
+      </button>
+    </div>
+
+    <!-- ============ PROFILE DETAIL / CONFIRM SHEET ============ -->
+    <div class="sheet-backdrop" id="sheetBackdrop" onclick="closeSheet()"></div>
+    <div class="sheet" id="sheet">
+      <div class="sheet-handle"></div>
+      <div id="sheetProfileView">
+        <div class="sheet-hero">
+          <div class="sheet-avatar" id="sheetAvatar">--</div>
+          <div>
+            <div class="sheet-name" id="sheetName">--</div>
+            <div class="sheet-meta" id="sheetMeta">--</div>
+          </div>
+        </div>
+        <div class="sheet-section">
+          <h4>&Agrave; propos</h4>
+          <p class="sheet-text" id="sheetBio">--</p>
+        </div>
+        <div class="sheet-section">
+          <h4>Envie du moment</h4>
+          <div class="p-tags" id="sheetTags"></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-ghost" onclick="closeSheet()">Fermer</button>
+          <button class="btn btn-primary" onclick="sayHello()">&#128075; Dire bonjour</button>
+        </div>
+      </div>
+
+      <div id="sheetConfirmView" style="display:none;">
+        <div class="sheet-name">Proposer un rendez-vous</div>
+        <div class="sheet-meta" id="confirmWith">avec --</div>
+        <div class="sheet-section" style="margin-top:16px;">
+          <h4>Lieu propos&eacute;</h4>
+          <input class="field-input" id="venueName" placeholder="Nom du restaurant (ou laisse vide pour explorer)" oninput="refreshConfirmMap()">
+          <iframe class="gmaps-embed" id="confirmMapsEmbed" src="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+          <a class="venue-swap" id="confirmMapsLink" href="#" target="_blank" rel="noopener" style="margin-top:10px;" onclick="return prepConfirmMapsLink(this);">&#128269; Ouvrir en plein &eacute;cran sur Google Maps</a>
+        </div>
+        <div class="sheet-section">
+          <h4>Heure</h4>
+          <div class="time-row" id="timeRow"></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-ghost" onclick="closeSheet()">Annuler</button>
+          <button class="btn btn-primary" onclick="confirmMeeting()">Confirmer le rendez-vous</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ THREAD OVERLAY ============ -->
+    <div class="thread" id="thread">
+      <div class="thread-head">
+        <button class="thread-back" onclick="closeThread()">&#8592;</button>
+        <div class="p-avatar" id="threadAvatar" style="width:38px;height:38px;border-radius:12px;font-size:14px;">--</div>
+        <div>
+          <div class="thread-name" id="threadName">--</div>
+          <div class="thread-sub" id="threadSub">en ligne</div>
+        </div>
+      </div>
+      <div class="thread-body" id="threadBody"></div>
+      <div class="thread-actions" id="threadActions" style="display:none;">
+        <button class="thread-propose" onclick="openConfirmFor(currentThread)">&#128205; Proposer un lieu et une heure</button>
+      </div>
+      <div class="thread-input" id="threadInputBar">
+        <input class="thread-field" id="threadField" placeholder="&Eacute;crire un message..." onkeydown="if(event.key==='Enter')sendThreadMsg()">
+        <button class="thread-send" onclick="sendThreadMsg()">&#10148;</button>
+      </div>
+    </div>
+
+    <!-- ============ PROFILE EDITOR OVERLAY ============ -->
+    <div class="editor" id="editor">
+      <div class="editor-head">
+        <button class="thread-back" onclick="closeEditor()">&#8592;</button>
+        <div class="editor-title">Ton profil</div>
+      </div>
+      <div class="editor-body">
+        <div class="field-group">
+          <span class="field-label">Photo</span>
+          <div class="photo-row">
+            <div class="photo-preview" id="editorPhotoPreview">FM</div>
+            <div>
+              <label class="photo-btn" for="photoInput">Changer la photo</label>
+              <input type="file" id="photoInput" accept="image/*" style="display:none;" onchange="onPhotoChange(event)">
+            </div>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <span class="field-label">Pr&eacute;nom</span>
+          <input class="field-input" id="fPrenom" value="Franck">
+        </div>
+        <div class="field-group" style="display:flex; gap:14px;">
+          <div style="flex:1;">
+            <span class="field-label">&Acirc;ge</span>
+            <input class="field-input" id="fAge" value="32" inputmode="numeric">
+          </div>
+          <div style="flex:2;">
+            <span class="field-label">Profession</span>
+            <input class="field-input" id="fJob" value="R&eacute;alisateur">
+          </div>
+        </div>
+        <div class="field-group">
+          <span class="field-label">Pr&eacute;sentation</span>
+          <textarea class="field-textarea" id="fBio" placeholder="Qui es-tu, ce que tu aimes, pourquoi tu es sur EatSolo...">Toujours partant pour d&eacute;couvrir une nouvelle adresse plut&ocirc;t que manger seul devant mon t&eacute;l&eacute;phone.</textarea>
+        </div>
+
+        <div class="field-group">
+          <span class="field-label">Tu es</span>
+          <div class="chip-group" id="genderGroup">
+            <div class="chip active" onclick="selectSingle(this,'genderGroup')">Homme</div>
+            <div class="chip" onclick="selectSingle(this,'genderGroup')">Femme</div>
+            <div class="chip" onclick="selectSingle(this,'genderGroup')">Autre</div>
+          </div>
+        </div>
+        <div class="field-group">
+          <span class="field-label">Tu veux rencontrer</span>
+          <div class="chip-group" id="lookingGroup">
+            <div class="chip" onclick="toggleChip(this)">Hommes</div>
+            <div class="chip" onclick="toggleChip(this)">Femmes</div>
+            <div class="chip active" onclick="toggleChip(this)">Tout le monde</div>
+          </div>
+        </div>
+        <div class="field-group">
+          <span class="field-label">Go&ucirc;ts culinaires</span>
+          <div class="chip-group" id="cuisineGroup">
+            <div class="chip active" onclick="toggleChip(this)">Italien</div>
+            <div class="chip" onclick="toggleChip(this)">Japonais</div>
+            <div class="chip active" onclick="toggleChip(this)">Lyonnais</div>
+            <div class="chip" onclick="toggleChip(this)">V&eacute;g&eacute;</div>
+            <div class="chip" onclick="toggleChip(this)">Street food</div>
+            <div class="chip" onclick="toggleChip(this)">&OElig;nologie</div>
+          </div>
+        </div>
+        <div class="field-group">
+          <span class="field-label">Centres d'int&eacute;r&ecirc;t</span>
+          <div class="chip-group" id="hobbyGroup">
+            <div class="chip active" onclick="toggleChip(this)">Cin&eacute;ma</div>
+            <div class="chip" onclick="toggleChip(this)">Photo</div>
+            <div class="chip" onclick="toggleChip(this)">Sport</div>
+            <div class="chip" onclick="toggleChip(this)">Voyage</div>
+            <div class="chip" onclick="toggleChip(this)">Musique</div>
+            <div class="chip" onclick="toggleChip(this)">R&eacute;seau pro</div>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <span class="field-label">V&eacute;rification &amp; s&eacute;curit&eacute;</span>
+          <div class="verify-card">
+            <div class="icon-box">&#127380;</div>
+            <div style="flex:1;">
+              <div style="font-weight:700; font-size:13.5px;">Identit&eacute; v&eacute;rifi&eacute;e</div>
+              <p>Pi&egrave;ce d'identit&eacute; et selfie valid&eacute;s &mdash; seuls les profils v&eacute;rifi&eacute;s sont visibles par les autres membres et peuvent dire bonjour.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="editor-foot">
+        <button class="save-btn" onclick="saveProfile()">Enregistrer mon profil</button>
+      </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+  </div>
+
+  <div class="stage-note">Prototype cliquable &mdash; <b>EatSolo</b>. Pens&eacute; pour revue interne : navigue entre les &eacute;crans, ouvre un profil, propose un rendez-vous, regarde la conversation se cr&eacute;er.</div>
+</div>
+
+<script>
+const people = [
+  {name:"Camille", age:29, dist:"120 m", init:"C", color:"linear-gradient(135deg,var(--pink),var(--pink-deep))", bio:"En déplacement pour 2 jours, je bosse dans l'événementiel. Envie d'un bon italien ce soir plutôt que room service.", tags:["Dîner · 20h","Italien","Discussion"], time:"maintenant", venue:{icon:"🍝", name:"Trattoria Basilico", meta:"Italien · 4 min à pied"}, pos:{top:"30%", left:"38%"}},
+  {name:"Nassim", age:34, dist:"280 m", init:"N", color:"linear-gradient(135deg,var(--pink-soft),var(--pink-deep))", bio:"Commercial en tournée, de passage à Lyon jusqu'à demain. Partant pour un dîner tranquille, pas de blabla business.", tags:["Dîner · 19h30","Japonais"], time:"maintenant", venue:{icon:"🍣", name:"Kyoto Izakaya", meta:"Japonais · 6 min à pied"}, pos:{top:"58%", left:"66%"}},
+  {name:"Elena", age:26, dist:"450 m", init:"E", color:"linear-gradient(225deg,var(--pink-deep),var(--pink))", bio:"Arrivée hier à Lyon pour un nouveau job, je ne connais encore personne. Envie de découvrir un bouchon lyonnais.", tags:["Dîner · 20h30","Local","Nouvel arrivant"], time:"maintenant", venue:{icon:"🍷", name:"Le Bouchon des Cordeliers", meta:"Lyonnais · 8 min à pied"}, pos:{top:"22%", left:"70%"}},
+  {name:"Thomas", age:41, dist:"600 m", init:"T", color:"linear-gradient(45deg,var(--pink),var(--pink-deep))", bio:"De passage pour un salon pro. Amateur de bons vins, ouvert à toute discussion autour d'une table.", tags:["Verre · 19h","Œnologie"], time:"il y a 4 min", venue:{icon:"🍷", name:"Le Bar à Vins de Bellecour", meta:"Bar à vins · 9 min à pied"}, pos:{top:"72%", left:"28%"}},
+  {name:"Sofia", age:31, dist:"750 m", init:"S", color:"linear-gradient(225deg,var(--pink-soft),var(--pink-deep))", bio:"Expatriée depuis 3 mois, je cherche à élargir mon réseau. Toujours partante pour un dîner convivial.", tags:["Dîner · 20h","Réseau"], time:"il y a 6 min", venue:{icon:"🍽️", name:"Le Comptoir d'Antoine", meta:"Bistrot · 11 min à pied"}, pos:{top:"14%", left:"48%"}},
+  {name:"Julien", age:37, dist:"900 m", init:"J", color:"linear-gradient(45deg,var(--pink-deep),var(--pink-soft))", bio:"Photographe freelance en repérage dans le coin. Pas fan de manger seul avec son téléphone.", tags:["Dîner · 21h","Photo"], time:"il y a 9 min", venue:{icon:"🍜", name:"Nam Nam Street Food", meta:"Asiatique · 13 min à pied"}, pos:{top:"80%", left:"58%"}},
+];
+
+const conversations = {
+  Elena:{status:"accepted", preview:"Super, on se retrouve au Comptoir à 20h30 ?", time:"2 min", unread:true, log:[
+    {who:"them", text:"Salut ! Avec plaisir pour ce soir 😊"},
+    {who:"me", text:"Nickel, ça te dit un bouchon lyonnais ?"},
+    {who:"them", text:"Super, on se retrouve au Comptoir à 20h30 ?"},
+  ]},
+  Nassim:{status:"pending", preview:"", time:"maintenant", unread:true, log:[]},
+  Sofia:{status:"accepted", preview:"Merci pour hier soir, c'était top !", time:"1 j", unread:false, log:[
+    {who:"them", text:"Merci pour hier soir, c'était top !"},
+    {who:"me", text:"Avec plaisir, on remet ça bientôt !"},
+  ]},
+};
+
+const times = ["19h00","19h30","20h00","20h30","21h00"];
+let selectedTime = "20h00";
+let currentSheetPerson = null;
+let isSignupFlow = false;
+let currentConfirmName = null;
+let currentThread = null;
+
+const peopleList = document.getElementById('peopleList');
+const mapPinsEl = document.getElementById('mapPins');
+
+function render(){
+  document.getElementById('countLabel').textContent = people.length;
+  document.getElementById('mapCount').textContent = people.length + ' dispo';
+
+  if(people.length === 0){
+    peopleList.innerHTML = `<div class="empty"><h3>Personne d'autre pour l'instant</h3><p>Ouvre ce m&ecirc;me lien sur un autre appareil connect&eacute; au m&ecirc;me wifi pour le voir appara&icirc;tre ici.</p></div>`;
+    mapPinsEl.innerHTML = '';
+    return;
+  }
+
+  peopleList.innerHTML = people.map((p,i)=>`
+    <div class="person-card" onclick="openSheet(${i})">
+      <div class="p-avatar" style="background:${p.color}">${p.init}<div class="dot-online"></div></div>
+      <div class="p-body">
+        <div class="p-top"><div class="p-name">${p.name}${p.age ? ', '+p.age : ''}</div><div class="p-dist">${p.dist}</div></div>
+        <div class="p-bio">${p.bio}</div>
+        <div class="p-tags">${p.tags.map((t,ti)=>`<div class="tag ${ti===0?'time':''}">${t}</div>`).join('')}</div>
+      </div>
+    </div>
+  `).join('');
+
+  mapPinsEl.innerHTML = people.map((p,i)=>`
+    <div class="map-pin" style="top:${p.pos.top}; left:${p.pos.left}; background:${p.color};" onclick="openSheet(${i})">
+      <span>${p.init}</span>
+    </div>
+  `).join('');
+}
+render();
+
+function setView(v){
+  const list = document.getElementById('peopleList');
+  const map = document.getElementById('mapView');
+  const label = document.querySelector('.section-label');
+  document.getElementById('viewBtnList').classList.toggle('active', v==='list');
+  document.getElementById('viewBtnMap').classList.toggle('active', v==='map');
+  list.style.display = v==='list' ? 'flex' : 'none';
+  map.style.display = v==='map' ? 'block' : 'none';
+  label.style.display = v==='list' ? 'flex' : 'none';
+}
+
+function openSheet(i){
+  currentSheetPerson = i;
+  const p = people[i];
+  document.getElementById('sheetAvatar').textContent = p.init;
+  document.getElementById('sheetAvatar').style.background = p.color;
+  document.getElementById('sheetName').textContent = p.name + ', ' + p.age;
+  document.getElementById('sheetMeta').textContent = p.dist + ' · disponible ' + p.time;
+  document.getElementById('sheetBio').textContent = p.bio;
+  document.getElementById('sheetTags').innerHTML = p.tags.map((t,ti)=>`<div class="tag ${ti===0?'time':''}">${t}</div>`).join('');
+  showProfileView();
+  document.getElementById('sheet').classList.add('open');
+  document.getElementById('sheetBackdrop').classList.add('open');
+}
+function closeSheet(){
+  document.getElementById('sheet').classList.remove('open');
+  document.getElementById('sheetBackdrop').classList.remove('open');
+}
+function showProfileView(){
+  document.getElementById('sheetProfileView').style.display = 'block';
+  document.getElementById('sheetConfirmView').style.display = 'none';
+}
+
+function sayHello(){
+  const p = people[currentSheetPerson];
+  if(!conversations[p.name]){
+    conversations[p.name] = {status:'pending', time:'maintenant', unread:true, log:[]};
+  } else {
+    conversations[p.name].status = 'pending';
+    conversations[p.name].unread = true;
+    conversations[p.name].time = 'maintenant';
+  }
+  closeSheet();
+  showToast('Demande envoyée à ' + p.name);
+  renderMessages();
+  showScreen('messages');
+}
+
+function openConfirmFor(name){
+  currentConfirmName = name;
+  const p = personByName(name);
+  document.getElementById('confirmWith').textContent = 'avec ' + name;
+  document.getElementById('venueName').value = (p && p.venue) ? p.venue.name : '';
+  prepConfirmMapsLink(document.getElementById('confirmMapsLink'));
+  document.getElementById('timeRow').innerHTML = times.map(t=>`<div class="chip ${t===selectedTime?'active':''}" onclick="pickTime(this,'${t}')">${t}</div>`).join('');
+  document.getElementById('sheetProfileView').style.display = 'none';
+  document.getElementById('sheetConfirmView').style.display = 'block';
+  document.getElementById('sheet').classList.add('open');
+  document.getElementById('sheetBackdrop').classList.add('open');
+  refreshConfirmMap();
+}
+function pickTime(el, t){
+  selectedTime = t;
+  document.querySelectorAll('#timeRow .chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+}
+function confirmMeeting(){
+  const name = currentConfirmName;
+  const venueName = document.getElementById('venueName').value.trim() || 'un lieu à définir';
+  conversations[name].log.push({who:'system', text:'Rendez-vous confirmé · ' + venueName + ' à ' + selectedTime});
+  conversations[name].preview = 'Rendez-vous confirmé · ' + selectedTime;
+  conversations[name].time = 'maintenant';
+  closeSheet();
+  showToast('Rendez-vous confirmé avec ' + name);
+  if(currentThread === name){ renderThreadBody(); }
+  renderMessages();
+}
+
+function toggleAvail(){
+  const t = document.getElementById('availToggle');
+  const on = t.classList.toggle('on');
+  document.getElementById('pulseRing').classList.toggle('on', on);
+  document.getElementById('availTitle').textContent = on ? 'Je suis dispo' : 'Passer indisponible';
+}
+function setIntent(el){
+  document.querySelectorAll('.intent-select .chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function personByName(name){
+  return people.find(p=>p.name===name) || {init:name[0], color:'linear-gradient(135deg,var(--pink),var(--pink-deep))'};
+}
+
+function renderMessages(){
+  const names = Object.keys(conversations);
+  const msgList = document.getElementById('msgList');
+  if(names.length===0){
+    msgList.innerHTML = `<div class="empty"><h3>Pas encore de message</h3><p>Dis bonjour à quelqu'un depuis le Radar pour démarrer une conversation.</p></div>`;
+    return;
+  }
+  msgList.innerHTML = names.map(name=>{
+    const c = conversations[name];
+    const p = personByName(name);
+    const pending = c.status === 'pending';
+    const preview = pending ? 'En attente de réponse…' : (c.preview || '');
+    return `
+    <button class="msg-item" onclick="openThread('${name}')">
+      <div class="p-avatar" style="width:48px;height:48px;border-radius:14px;font-size:16px;background:${p.color}">${p.init}</div>
+      <div class="msg-body">
+        <div class="msg-top"><div class="msg-name">${name}</div><div class="msg-time">${c.time}</div></div>
+        <div class="msg-preview" style="${pending?'color:var(--pending); font-style:italic;':''}">${preview}</div>
+      </div>
+      ${c.unread ? `<div class="msg-badge" style="${pending?'background:var(--pending); box-shadow:0 0 8px var(--pending);':''}"></div>` : ''}
+    </button>`;
+  }).join('');
+}
+renderMessages();
+
+function openThread(name){
+  currentThread = name;
+  const c = conversations[name];
+  c.unread = false;
+  const p = personByName(name);
+  document.getElementById('threadAvatar').textContent = p.init;
+  document.getElementById('threadAvatar').style.background = p.color;
+  document.getElementById('threadName').textContent = name;
+  document.getElementById('threadSub').textContent = c.status === 'pending' ? 'en attente de réponse' : 'en ligne';
+  renderThreadBody();
+  document.getElementById('thread').classList.add('open');
+}
+function renderThreadBody(){
+  const c = conversations[currentThread];
+  const body = document.getElementById('threadBody');
+  const actions = document.getElementById('threadActions');
+  const inputBar = document.getElementById('threadInputBar');
+
+  if(c.status === 'pending'){
+    const p = personByName(currentThread);
+    body.innerHTML = `
+      <div class="pending-card">
+        <div class="p-avatar" style="background:${p.color}">${p.init}</div>
+        <div class="pending-title">Tu as dit bonjour à ${currentThread} 👋</div>
+        <div class="pending-sub">La discussion ne s'ouvre que si ${currentThread} accepte, à son tour. Personne ne peut écrire tant que ce n'est pas réciproque.</div>
+        <button class="demo-btn" onclick="simulateAccept('${currentThread}')">Simuler : ${currentThread} accepte</button>
+        <span class="demo-flag">Aperçu démo — déclenché normalement par l'autre personne</span>
+      </div>`;
+    actions.style.display = 'none';
+    inputBar.style.display = 'none';
+    return;
+  }
+
+  body.innerHTML = c.log.map(m=>{
+    if(m.who==='system') return `<div class="bubble system">${m.text}</div>`;
+    return `<div class="bubble ${m.who}">${m.text}</div>`;
+  }).join('');
+  body.scrollTop = body.scrollHeight;
+  actions.style.display = 'block';
+  inputBar.style.display = 'flex';
+}
+function simulateAccept(name){
+  const c = conversations[name];
+  c.status = 'accepted';
+  c.log.push({who:'them', text:'Salut ! Avec plaisir, ça me dit bien 😊'});
+  c.preview = 'Salut ! Avec plaisir, ça me dit bien 😊';
+  c.time = 'maintenant';
+  document.getElementById('threadSub').textContent = 'en ligne';
+  renderThreadBody();
+  renderMessages();
+}
+function closeThread(){
+  document.getElementById('thread').classList.remove('open');
+  renderMessages();
+}
+function sendThreadMsg(){
+  const field = document.getElementById('threadField');
+  const text = field.value.trim();
+  if(!text) return;
+  conversations[currentThread].log.push({who:'me', text});
+  conversations[currentThread].preview = text;
+  conversations[currentThread].time = 'maintenant';
+  field.value = '';
+  renderThreadBody();
+}
+
+let toastTimer = null;
+function showToast(text){
+  const t = document.getElementById('toast');
+  t.textContent = text;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+function toggleChip(el){ el.classList.toggle('active'); }
+function selectSingle(el, groupId){
+  document.querySelectorAll('#'+groupId+' .chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+}
+function onPhotoChange(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const url = URL.createObjectURL(file);
+  document.getElementById('editorPhotoPreview').innerHTML = '<img src="'+url+'" alt="">';
+  document.getElementById('profileAvatar').innerHTML = '<img src="'+url+'" alt="" style="width:100%;height:100%;object-fit:cover;">';
+}
+function startSignup(){ isSignupFlow = true; openEditor(); }
+function openEditor(){ document.getElementById('editor').classList.add('open'); }
+function closeEditor(){ document.getElementById('editor').classList.remove('open'); }
+function saveProfile(){
+  const name = document.getElementById('fPrenom').value.trim() || 'Franck';
+  const age = document.getElementById('fAge').value.trim() || '32';
+  const job = document.getElementById('fJob').value.trim() || 'Réalisateur';
+  document.getElementById('profileName').textContent = name;
+  document.getElementById('profileSub').textContent = age + ' ans · ' + job + ' · Lyon / itinérant';
+  closeEditor();
+  if(isSignupFlow){
+    isSignupFlow = false;
+    showToast('Bienvenue sur EatSolo, ' + name + ' !');
+    enterApp();
+  } else {
+    showToast('Profil enregistré');
+  }
+}
+
+const MEAL_EMOJI = {cafe:'☕', dej:'🥗', diner:'🍜', verre:'🍸'};
+const MEAL_WORD = {cafe:'café', dej:'déjeuner', diner:'dîner', verre:'verre'};
+
+const plans = [
+  {name:'Marc', mealType:'diner', when:'Demain soir', slot:'19h – 21h', city:'Lyon', area:'6e arrondissement', restaurant:''},
+  {name:'Aline', mealType:'cafe', when:'Ce week-end', slot:'12h – 14h', city:'Lyon', area:'Presqu’île', restaurant:'Le Sucre'},
+];
+
+function getActiveChip(groupId){
+  const el = document.querySelector('#'+groupId+' .chip.active');
+  return el ? el.textContent.trim() : '';
+}
+function getActiveChipKey(groupId){
+  const el = document.querySelector('#'+groupId+' .chip.active');
+  return el ? el.getAttribute('data-i') : 'diner';
+}
+function buildMapsQuery(mealKey, city, area, venue){
+  if(venue && venue.trim()) return venue.trim() + ' ' + city;
+  return 'restaurant ' + (MEAL_WORD[mealKey] || 'dîner') + ' ' + (area ? area + ' ' : '') + city;
+}
+function buildMapsUrl(mealKey, city, area, venue){
+  return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(buildMapsQuery(mealKey, city, area, venue).trim());
+}
+function buildMapsEmbedUrl(mealKey, city, area, venue){
+  return 'https://www.google.com/maps?q=' + encodeURIComponent(buildMapsQuery(mealKey, city, area, venue).trim()) + '&output=embed';
+}
+function refreshPlanMap(){
+  const city = document.getElementById('locCity').value.trim() || 'Lyon';
+  const area = document.getElementById('locArea').value.trim();
+  const mealKey = getActiveChipKey('planMealGroup');
+  const venue = document.getElementById('planRestaurant').value.trim();
+  document.getElementById('planMapsEmbed').src = buildMapsEmbedUrl(mealKey, city, area, venue);
+}
+function refreshConfirmMap(){
+  const city = document.getElementById('locCity') ? (document.getElementById('locCity').value.trim() || 'Lyon') : 'Lyon';
+  const area = document.getElementById('locArea') ? document.getElementById('locArea').value.trim() : '';
+  const activeChip = document.querySelector('.intent-select .chip.active');
+  const mealKey = activeChip ? activeChip.getAttribute('data-i') : 'diner';
+  const venue = document.getElementById('venueName').value.trim();
+  document.getElementById('confirmMapsEmbed').src = buildMapsEmbedUrl(mealKey, city, area, venue);
+}
+function prepPlanMapsLink(a){
+  const city = document.getElementById('locCity').value.trim() || 'Lyon';
+  const area = document.getElementById('locArea').value.trim();
+  const mealKey = getActiveChipKey('planMealGroup');
+  const venue = document.getElementById('planRestaurant').value.trim();
+  a.href = buildMapsUrl(mealKey, city, area, venue);
+  return true;
+}
+function prepConfirmMapsLink(a){
+  const city = document.getElementById('locCity') ? (document.getElementById('locCity').value.trim() || 'Lyon') : 'Lyon';
+  const area = document.getElementById('locArea') ? document.getElementById('locArea').value.trim() : '';
+  const activeChip = document.querySelector('.intent-select .chip.active');
+  const mealKey = activeChip ? activeChip.getAttribute('data-i') : 'diner';
+  const venue = document.getElementById('venueName').value.trim();
+  a.href = buildMapsUrl(mealKey, city, area, venue);
+  return true;
+}
+
+function renderPlans(){
+  const el = document.getElementById('plansList');
+  const cityFilterEl = document.getElementById('planFilterCity');
+  const whenFilterEl = document.getElementById('planFilterWhen');
+  const cityFilter = cityFilterEl ? cityFilterEl.value.trim().toLowerCase() : '';
+  const whenFilter = whenFilterEl ? whenFilterEl.value : '';
+
+  const filtered = plans.filter(p=>{
+    if(cityFilter && !(p.city||'').toLowerCase().includes(cityFilter)) return false;
+    if(whenFilter && p.when !== whenFilter) return false;
+    return true;
+  });
+
+  if(!filtered.length){
+    el.innerHTML = plans.length
+      ? `<div class="empty" style="padding:26px 20px;"><h3>Aucun plan ne correspond</h3><p>Essaie une autre ville ou une autre date.</p></div>`
+      : `<div class="empty" style="padding:26px 20px;"><h3>Aucun plan partagé</h3><p>Planifie un dîner à l'avance depuis la pastille ville en haut de l'écran.</p></div>`;
+    return;
+  }
+  el.innerHTML = filtered.map(p=>{
+    const i = plans.indexOf(p);
+    return `
+    <div class="plan-card" onclick="planSayHello(${i})">
+      <div class="plan-icon">${MEAL_EMOJI[p.mealType] || '🍜'}</div>
+      <div class="p-body">
+        <div class="plan-name">${p.name}</div>
+        <div class="plan-meta">${p.when} · ${p.slot} · ${p.city}${p.area ? ' ('+p.area+')' : ''}${p.restaurant ? ' · '+p.restaurant : ''}</div>
+      </div>
+    </div>
+  `;
+  }).join('');
+}
+renderPlans();
+
+function planSayHello(i){
+  const p = plans[i];
+  if(!p) return;
+  if(LIVE.on && p.liveId){
+    fetch('/api/hello', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({
+      id: LIVE.me.id, name: LIVE.me.name, targetId: p.liveId
+    })}).catch(()=>{}).then(()=>esPollConversations()).then(()=>{
+      showToast('Demande envoyée à ' + p.name);
+      renderMessages();
+      showScreen('messages');
+    });
+  } else {
+    showToast('Dire bonjour à un plan est possible en mode direct, à deux appareils connectés');
+  }
+}
+
+function applyLocation(){
+  const city = document.getElementById('locCity').value.trim() || 'Lyon';
+  const area = document.getElementById('locArea').value.trim();
+  const when = getActiveChip('planDayGroup');
+  const slot = getActiveChip('planSlotGroup');
+  const mealKey = getActiveChipKey('planMealGroup');
+  const restaurant = document.getElementById('planRestaurant').value.trim();
+  const short = area ? city + ' · ' + area.replace(' arrondissement','e') : city;
+  document.getElementById('cityPillText').textContent = short;
+
+  if(LIVE.on){
+    fetch('/api/plan', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({
+      id: LIVE.me.id, name: LIVE.me.name, city, area, when, slot, mealType: mealKey, restaurant
+    })}).catch(()=>{});
+  }
+  showToast('Plan enregistré — ' + when.toLowerCase() + ', ' + slot);
+}
+function clearPlan(){
+  if(LIVE.on){
+    fetch('/api/plan/clear', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id: LIVE.me.id})}).catch(()=>{});
+  }
+  document.getElementById('planRestaurant').value = '';
+  showToast('Plan effacé');
+}
+
+const LOGO_SRC = {
+  neon: 'data:image/jpeg;base64,__LOGO_B64__',
+  golden: 'data:image/jpeg;base64,__LOGO_GOLDEN_B64__',
+  night: 'data:image/jpeg;base64,__LOGO_NIGHT_B64__'
+};
+const LOGO_BLEND = { neon:'screen', golden:'multiply', night:'screen' };
+
+function setAppTheme(name){
+  document.documentElement.setAttribute('data-app-theme', name);
+  document.querySelectorAll('.brand-logo, .splash-logo').forEach(img=>{
+    img.src = LOGO_SRC[name];
+    img.style.mixBlendMode = LOGO_BLEND[name];
+  });
+  document.querySelectorAll('.theme-swatch').forEach(b=>b.classList.remove('active'));
+  document.getElementById('themeSwatch-'+name).classList.add('active');
+}
+setAppTheme('neon');
+
+function enterApp(){
+  document.getElementById('screen-splash').style.display = 'none';
+  document.getElementById('navbar').style.display = 'flex';
+  showScreen('radar');
+}
+
+function showScreen(name){
+  ['radar','planifier','messages','profile'].forEach(s=>{
+    document.getElementById('screen-'+s).style.display = (s===name)?'block':'none';
+    document.getElementById('nav-'+s).classList.toggle('active', s===name);
+  });
+  closeSheet();
+  if(name === 'planifier'){ refreshPlanMap(); renderPlans(); }
+}
+
+/* ===================== MODE DIRECT (deux appareils, test réel) =====================
+   Actif uniquement si cette page est servie par le petit serveur local (server.py).
+   Sur l'artifact claude.ai ou le fichier autonome, le ping échoue et tout reste en mode démo. */
+const LIVE = { on:false, me:null, threadTimer:null };
+
+function esLoadIdentity(){
+  let id = localStorage.getItem('es_live_id');
+  let name = localStorage.getItem('es_live_name');
+  if(!id){
+    id = (crypto.randomUUID ? crypto.randomUUID() : 'u-' + Math.random().toString(36).slice(2));
+    localStorage.setItem('es_live_id', id);
+  }
+  if(!name){
+    name = 'Invité' + Math.floor(10 + Math.random()*89);
+    localStorage.setItem('es_live_name', name);
+  }
+  return {id, name};
+}
+function esSaveName(name){
+  localStorage.setItem('es_live_name', name);
+  if(LIVE.me) LIVE.me.name = name;
+}
+async function esPing(){
+  try{ const r = await fetch('/api/ping', {cache:'no-store'}); return r.ok; }catch(e){ return false; }
+}
+function esShowLiveBadge(){ document.getElementById('liveBadge').classList.add('show'); }
+
+const ES_COMBOS = [
+  'linear-gradient(135deg,var(--pink),var(--pink-deep))',
+  'linear-gradient(135deg,var(--pink-soft),var(--pink-deep))',
+  'linear-gradient(225deg,var(--pink-deep),var(--pink))',
+  'linear-gradient(45deg,var(--pink),var(--pink-deep))',
+  'linear-gradient(225deg,var(--pink-soft),var(--pink-deep))',
+  'linear-gradient(45deg,var(--pink-deep),var(--pink-soft))',
+];
+function esHash(str){ let h=0; for(let i=0;i<str.length;i++) h=(h*31+str.charCodeAt(i))>>>0; return h; }
+function esColorFor(id){ return ES_COMBOS[esHash(id) % ES_COMBOS.length]; }
+function esPosFor(id){ const h=esHash(id); return { top:(18+(h%65))+'%', left:(15+((h>>>3)%70))+'%' }; }
+const ES_INTENT_LABEL = {cafe:'☕ Café', dej:'🥗 Déjeuner', diner:'🍜 Dîner', verre:'🍸 Verre'};
+function esMarkSeen(convoId, count){ if(convoId) localStorage.setItem('es_seen_'+convoId, String(count)); }
+
+async function esSendPresence(){
+  if(!LIVE.on || !LIVE.me) return;
+  const toggle = document.getElementById('availToggle');
+  const available = toggle ? toggle.classList.contains('on') : true;
+  const activeChip = document.querySelector('.intent-select .chip.active');
+  const intentKey = activeChip ? activeChip.getAttribute('data-i') : 'diner';
+  try{
+    await fetch('/api/presence', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({
+      id: LIVE.me.id, name: LIVE.me.name, bio: localStorage.getItem('es_live_bio') || '', intent: intentKey, available
+    })});
+  }catch(e){}
+}
+
+async function esPollPeople(){
+  if(!LIVE.on) return;
+  try{
+    const r = await fetch('/api/people?id='+encodeURIComponent(LIVE.me.id), {cache:'no-store'});
+    const data = await r.json();
+    people.length = 0;
+    (data.people||[]).forEach(p=>{
+      people.push({
+        name:p.name, age:'', init:(p.name[0]||'?').toUpperCase(), color:esColorFor(p.id),
+        dist:'en direct', bio:p.bio || 'Dispo maintenant, viens dire bonjour 👋',
+        tags:[ES_INTENT_LABEL[p.intent] || ES_INTENT_LABEL.diner], time:'maintenant',
+        pos:esPosFor(p.id), liveId:p.id,
+      });
+    });
+    render();
+  }catch(e){}
+}
+
+async function esPollPlans(){
+  if(!LIVE.on) return;
+  try{
+    const r = await fetch('/api/plans?id='+encodeURIComponent(LIVE.me.id), {cache:'no-store'});
+    const data = await r.json();
+    plans.length = 0;
+    (data.plans||[]).forEach(p=>{
+      plans.push({
+        name:p.name, mealType:p.mealType, when:p.when, slot:p.slot,
+        city:p.city, area:p.area, restaurant:p.restaurant, liveId:p.id,
+      });
+    });
+    renderPlans();
+  }catch(e){}
+}
+
+async function esPollConversations(){
+  if(!LIVE.on) return;
+  try{
+    const r = await fetch('/api/conversations?id='+encodeURIComponent(LIVE.me.id), {cache:'no-store'});
+    const data = await r.json();
+    (data.conversations||[]).forEach(c=>{
+      const prev = conversations[c.otherName];
+      const seenCount = parseInt(localStorage.getItem('es_seen_'+c.convo) || '0', 10);
+      conversations[c.otherName] = {
+        status:c.status, time:'maintenant', unread: c.logLength > seenCount,
+        preview: c.status==='pending' ? '' : c.preview,
+        liveOtherId:c.otherId, liveConvo:c.convo, iAmInitiator:c.iAmInitiator,
+        log:(prev && prev.log) || [],
+      };
+    });
+    if(document.getElementById('screen-messages').style.display !== 'none'){ renderMessages(); }
+  }catch(e){}
+}
+
+async function esRefreshThread(){
+  if(!LIVE.on || !currentThread) return;
+  const c = conversations[currentThread];
+  const otherId = c && c.liveOtherId;
+  if(!otherId) return;
+  try{
+    const r = await fetch('/api/thread?id='+encodeURIComponent(LIVE.me.id)+'&with='+encodeURIComponent(otherId), {cache:'no-store'});
+    const data = await r.json();
+    conversations[currentThread].status = data.status || 'pending';
+    conversations[currentThread].log = data.log || [];
+    conversations[currentThread].iAmInitiator = data.iAmInitiator;
+    esMarkSeen(conversations[currentThread].liveConvo, (data.log||[]).length);
+    document.getElementById('threadSub').textContent = conversations[currentThread].status==='accepted' ? 'en ligne' : 'en attente';
+    renderThreadBody();
+  }catch(e){}
+}
+
+async function esRespond(accept){
+  const c = conversations[currentThread];
+  if(!c || !c.liveOtherId) return;
+  try{
+    await fetch('/api/respond', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({
+      id: LIVE.me.id, targetId: c.liveOtherId, accept
+    })});
+  }catch(e){}
+  esRefreshThread();
+}
+
+const _offToggleAvail = toggleAvail;
+toggleAvail = function(){ _offToggleAvail(); esSendPresence(); };
+const _offSetIntent = setIntent;
+setIntent = function(el){ _offSetIntent(el); esSendPresence(); };
+
+const _offSayHello = sayHello;
+sayHello = function(){
+  if(!LIVE.on) return _offSayHello();
+  const p = people[currentSheetPerson];
+  if(!p || !p.liveId) return _offSayHello();
+  closeSheet();
+  fetch('/api/hello', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({
+    id: LIVE.me.id, name: LIVE.me.name, targetId: p.liveId
+  })}).catch(()=>{}).then(()=>esPollConversations()).then(()=>{
+    showToast('Demande envoyée à ' + p.name);
+    renderMessages();
+    showScreen('messages');
+  });
+};
+
+const _offRenderThreadBody = renderThreadBody;
+renderThreadBody = function(){
+  if(!LIVE.on) return _offRenderThreadBody();
+  const c = conversations[currentThread];
+  const body = document.getElementById('threadBody');
+  const actions = document.getElementById('threadActions');
+  const inputBar = document.getElementById('threadInputBar');
+  if(!c){ body.innerHTML=''; actions.style.display='none'; inputBar.style.display='none'; return; }
+
+  if(c.status === 'pending'){
+    const p = personByName(currentThread);
+    if(c.iAmInitiator){
+      body.innerHTML = `
+        <div class="pending-card">
+          <div class="p-avatar" style="background:${p.color}">${p.init}</div>
+          <div class="pending-title">Tu as dit bonjour à ${currentThread} 👋</div>
+          <div class="pending-sub">En attente de sa réponse, en direct...</div>
+        </div>`;
+    } else {
+      body.innerHTML = `
+        <div class="pending-card">
+          <div class="p-avatar" style="background:${p.color}">${p.init}</div>
+          <div class="pending-title">${currentThread} te dit bonjour 👋</div>
+          <div class="pending-sub">Accepte pour commencer à discuter.</div>
+          <div class="btn-row" style="margin-top:18px; max-width:230px; margin-left:auto; margin-right:auto;">
+            <button class="btn btn-ghost" onclick="esRespond(false)">Ignorer</button>
+            <button class="btn btn-primary" onclick="esRespond(true)">Accepter</button>
+          </div>
+        </div>`;
+    }
+    actions.style.display = 'none';
+    inputBar.style.display = 'none';
+    return;
+  }
+
+  if(c.status === 'declined'){
+    body.innerHTML = `<div class="pending-card"><div class="pending-title">Demande refusée</div></div>`;
+    actions.style.display = 'none';
+    inputBar.style.display = 'none';
+    return;
+  }
+
+  body.innerHTML = (c.log||[]).map(m=>{
+    if(m.who==='system') return `<div class="bubble system">${m.text}</div>`;
+    const mine = m.who === LIVE.me.id;
+    return `<div class="bubble ${mine?'me':'them'}">${m.text}</div>`;
+  }).join('');
+  body.scrollTop = body.scrollHeight;
+  actions.style.display = 'block';
+  inputBar.style.display = 'flex';
+};
+
+const _offOpenThread = openThread;
+openThread = function(name){
+  if(!LIVE.on) return _offOpenThread(name);
+  currentThread = name;
+  const c = conversations[name];
+  if(c) c.unread = false;
+  const p = personByName(name);
+  document.getElementById('threadAvatar').textContent = p.init;
+  document.getElementById('threadAvatar').style.background = p.color;
+  document.getElementById('threadName').textContent = name;
+  document.getElementById('threadSub').textContent = (c && c.status==='pending') ? 'en attente' : 'en ligne';
+  document.getElementById('thread').classList.add('open');
+  esRefreshThread();
+  if(LIVE.threadTimer) clearInterval(LIVE.threadTimer);
+  LIVE.threadTimer = setInterval(esRefreshThread, 2000);
+};
+
+const _offCloseThread = closeThread;
+closeThread = function(){
+  if(LIVE.threadTimer){ clearInterval(LIVE.threadTimer); LIVE.threadTimer = null; }
+  if(!LIVE.on) return _offCloseThread();
+  document.getElementById('thread').classList.remove('open');
+  esPollConversations();
+};
+
+const _offSendThreadMsg = sendThreadMsg;
+sendThreadMsg = function(){
+  if(!LIVE.on) return _offSendThreadMsg();
+  const field = document.getElementById('threadField');
+  const text = field.value.trim();
+  if(!text) return;
+  const c = conversations[currentThread];
+  if(!c || !c.liveOtherId) return;
+  field.value = '';
+  fetch('/api/message', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({
+    id: LIVE.me.id, targetId: c.liveOtherId, text
+  })}).catch(()=>{}).then(()=>esRefreshThread());
+};
+
+const _offConfirmMeeting = confirmMeeting;
+confirmMeeting = function(){
+  if(!LIVE.on) return _offConfirmMeeting();
+  const name = currentConfirmName;
+  const c = conversations[name];
+  const venueName = document.getElementById('venueName').value.trim() || 'un lieu à définir';
+  closeSheet();
+  if(!c || !c.liveOtherId){ showToast('Rendez-vous proposé à ' + name); return; }
+  fetch('/api/meeting', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({
+    id: LIVE.me.id, targetId: c.liveOtherId, venue: venueName, time: selectedTime
+  })}).catch(()=>{}).then(()=>{
+    showToast('Rendez-vous proposé à ' + name);
+    esRefreshThread();
+  });
+};
+
+const _offSaveProfile = saveProfile;
+saveProfile = function(){
+  _offSaveProfile();
+  const name = document.getElementById('fPrenom').value.trim();
+  if(name){ esSaveName(name); esSendPresence(); }
+};
+
+async function initLiveMode(){
+  const ok = await esPing();
+  if(!ok) return;
+  LIVE.on = true;
+  LIVE.me = esLoadIdentity();
+  if(!localStorage.getItem('es_live_named')){
+    const chosen = prompt('Ton prénom pour ce test en direct ?', LIVE.me.name);
+    if(chosen && chosen.trim()){ esSaveName(chosen.trim()); }
+    localStorage.setItem('es_live_named', '1');
+  }
+  Object.keys(conversations).forEach(k=>delete conversations[k]);
+  esShowLiveBadge();
+  esSendPresence();
+  setInterval(esSendPresence, 4000);
+  esPollPeople();
+  setInterval(esPollPeople, 3000);
+  esPollConversations();
+  setInterval(esPollConversations, 3000);
+  esPollPlans();
+  setInterval(esPollPlans, 4000);
+}
+initLiveMode();
+</script>
