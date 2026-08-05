@@ -8,6 +8,7 @@ from pathlib import Path
 from urllib.parse import urlparse, parse_qs
 
 ROOT = Path(__file__).parent
+STATIC_FILE = ROOT / "dist" / "index.html"
 STALE_AFTER = 25  # seconds without a heartbeat before someone drops off the radar
 
 lock = threading.Lock()
@@ -242,7 +243,7 @@ if __name__ == "__main__":
             return self._serve_static()
 
         def _serve_static(self):
-            fp = ROOT / "index.html"
+            fp = STATIC_FILE
             body = fp.read_bytes()
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
