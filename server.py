@@ -12,9 +12,37 @@ STATIC_FILE = ROOT / "dist" / "index.html"
 STALE_AFTER = 25  # seconds without a heartbeat before someone drops off the radar
 
 lock = threading.Lock()
-presence = {}       # id -> {id, name, bio, intent, available, lastSeen}
+presence = {}       # id -> {id, name, intent, available, lastSeen}
+profiles = {}       # id -> full profile; outlives presence so you can still view a contact's profile
 conversations = {}  # convoKey -> {id, participants:[a,b], names:{id:name}, initiator, status, log:[{who,text,ts}]}
 plans = {}          # id -> {id, name, city, area, when, slot, mealType, restaurant, active, updatedAt}
+
+PROFILE_FIELDS = ("name", "age", "job", "bio", "gender", "city", "photo")
+PROFILE_LISTS = ("cuisines", "hobbies")
+
+
+def clean_profile(data):
+    """Whitelist + size-cap whatever the client sent, so one client can't bloat the store."""
+    out = {}
+    for key in PROFILE_FIELDS:
+        value = data.get(key)
+        if isinstance(value, str):
+            # photos arrive as small downscaled data URLs; everything else is short text
+            out[key] = value[:200000] if key == "photo" else value[:200]
+    for key in PROFILE_LISTS:
+        value = data.get(key)
+        if isinstance(value, list):
+            out[key] = [str(v)[:40] for v in value[:12]]
+    out["verified"] = bool(data.get("verified", True))
+    return out
+
+
+def public_profile(pid):
+    """Profile as other members see it, always including an id and a display name."""
+    p = dict(profiles.get(pid) or {})
+    p["id"] = pid
+    p.setdefault("name", presence.get(pid, {}).get("name", "?"))
+    return p
 
 
 def convo_key(a, b):
@@ -67,11 +95,17 @@ class Handler(BaseHTTPRequestHandler):
                 for pid, p in presence.items():
                     if pid == me or not p.get("available"):
                         continue
-                    out.append({
-                        "id": pid, "name": p["name"], "bio": p.get("bio", ""),
-                        "intent": p.get("intent", "diner"),
-                    })
+                    entry = public_profile(pid)
+                    entry["intent"] = p.get("intent", "diner")
+                    out.append(entry)
             return self._send_json({"people": out})
+
+        if path == "/api/profile":
+            who = (qs.get("who") or [""])[0]
+            if not who:
+                return self._send_json({"error": "missing who"}, 400)
+            with lock:
+                return self._send_json({"profile": public_profile(who)})
 
         if path == "/api/conversations":
             me = (qs.get("id") or [""])[0]
@@ -115,7 +149,9 @@ class Handler(BaseHTTPRequestHandler):
                 for pid, p in plans.items():
                     if pid == me or not p.get("active"):
                         continue
-                    out.append(p)
+                    entry = dict(p)
+                    entry["profile"] = public_profile(pid)
+                    out.append(entry)
             return self._send_json({"plans": out})
 
         return self._send_json({"error": "not found"}, 404)
@@ -132,11 +168,13 @@ class Handler(BaseHTTPRequestHandler):
                 presence[pid] = {
                     "id": pid,
                     "name": (data.get("name") or "Invité")[:40],
-                    "bio": (data.get("bio") or "")[:200],
                     "intent": data.get("intent") or "diner",
                     "available": bool(data.get("available", True)),
                     "lastSeen": time.time(),
                 }
+                profile = clean_profile(data)
+                profile.setdefault("name", presence[pid]["name"])
+                profiles[pid] = profile
                 prune_presence()
             return self._send_json({"ok": True})
 
@@ -231,8 +269,8 @@ class QuietThreadingHTTPServer(ThreadingHTTPServer):
 
 if __name__ == "__main__":
     import sys
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else 8765
     import os
+    port = int(os.environ.get("PORT") or (sys.argv[1] if len(sys.argv) > 1 else 8765))
     os.chdir(ROOT)
 
     # serve static index.html for everything that isn't /api/*

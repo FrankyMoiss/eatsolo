@@ -147,7 +147,7 @@
     font-variant-numeric:tabular-nums; position:relative; z-index:70;
   }
   .live-badge{
-    position:absolute; top:50px; right:14px; z-index:65; font-size:10.5px; font-weight:700; color:var(--success);
+    position:absolute; left:14px; bottom:92px; z-index:65; font-size:10.5px; font-weight:700; color:var(--success);
     background:color-mix(in srgb, var(--bg) 85%, transparent); border:1px solid var(--line); padding:5px 10px 5px 8px;
     border-radius:100px; display:none; align-items:center; gap:5px; font-family:var(--body);
   }
@@ -350,7 +350,13 @@
   .sheet.open{ transform:translateY(0); }
   .sheet-handle{ width:40px; height:4px; background:var(--line); border-radius:10px; margin:10px auto 16px; }
   .sheet-hero{ display:flex; gap:14px; align-items:center; }
-  .sheet-avatar{ width:70px; height:70px; border-radius:20px; display:flex; align-items:center; justify-content:center; font-family:var(--display); font-size:26px; font-weight:700; color:#fff; flex:none; }
+  .sheet-avatar{ width:70px; height:70px; border-radius:20px; display:flex; align-items:center; justify-content:center; font-family:var(--display); font-size:26px; font-weight:700; color:#fff; flex:none; overflow:hidden; }
+  .sheet-avatar img{ width:100%; height:100%; object-fit:cover; }
+  .p-avatar img{ width:100%; height:100%; object-fit:cover; border-radius:inherit; }
+  .verified-badge{ display:inline-flex; align-items:center; gap:5px; margin-top:7px; font-size:11px; font-weight:700; color:var(--success); background:color-mix(in srgb, var(--success) 14%, transparent); padding:4px 9px; border-radius:100px; }
+  .tappable-profile{ cursor:pointer; }
+  .tappable-profile:active{ opacity:.7; }
+  .profile-hint{ font-size:10.5px; color:var(--muted); font-weight:600; margin-top:1px; }
   .sheet-name{ font-family:var(--display); font-size:20px; font-weight:600; }
   .sheet-meta{ font-size:12.5px; color:var(--muted); margin-top:2px; font-weight:600; }
   .sheet-section{ margin-top:20px; }
@@ -715,19 +721,28 @@
           <div>
             <div class="sheet-name" id="sheetName">--</div>
             <div class="sheet-meta" id="sheetMeta">--</div>
+            <div class="verified-badge" id="sheetVerified">&#127380; Identit&eacute; v&eacute;rifi&eacute;e</div>
           </div>
         </div>
-        <div class="sheet-section">
+        <div class="sheet-section" id="sheetBioSection">
           <h4>&Agrave; propos</h4>
           <p class="sheet-text" id="sheetBio">--</p>
         </div>
-        <div class="sheet-section">
+        <div class="sheet-section" id="sheetIntentSection">
           <h4>Envie du moment</h4>
           <div class="p-tags" id="sheetTags"></div>
         </div>
+        <div class="sheet-section" id="sheetCuisineSection">
+          <h4>Go&ucirc;ts culinaires</h4>
+          <div class="p-tags" id="sheetCuisines"></div>
+        </div>
+        <div class="sheet-section" id="sheetHobbySection">
+          <h4>Centres d'int&eacute;r&ecirc;t</h4>
+          <div class="p-tags" id="sheetHobbies"></div>
+        </div>
         <div class="btn-row">
           <button class="btn btn-ghost" onclick="closeSheet()">Fermer</button>
-          <button class="btn btn-primary" onclick="sayHello()">&#128075; Dire bonjour</button>
+          <button class="btn btn-primary" id="sheetHelloBtn" onclick="sayHello()">&#128075; Dire bonjour</button>
         </div>
       </div>
 
@@ -755,10 +770,11 @@
     <div class="thread" id="thread">
       <div class="thread-head">
         <button class="thread-back" onclick="closeThread()">&#8592;</button>
-        <div class="p-avatar" id="threadAvatar" style="width:38px;height:38px;border-radius:12px;font-size:14px;">--</div>
-        <div>
+        <div class="p-avatar tappable-profile" id="threadAvatar" onclick="openProfileFromThread()" style="width:38px;height:38px;border-radius:12px;font-size:14px;">--</div>
+        <div class="tappable-profile" onclick="openProfileFromThread()">
           <div class="thread-name" id="threadName">--</div>
           <div class="thread-sub" id="threadSub">en ligne</div>
+          <div class="profile-hint">Voir le profil &rsaquo;</div>
         </div>
       </div>
       <div class="thread-body" id="threadBody"></div>
@@ -871,12 +887,12 @@
 
 <script>
 const people = [
-  {name:"Camille", age:29, dist:"120 m", init:"C", color:"linear-gradient(135deg,var(--pink),var(--pink-deep))", bio:"En déplacement pour 2 jours, je bosse dans l'événementiel. Envie d'un bon italien ce soir plutôt que room service.", tags:["Dîner · 20h","Italien","Discussion"], time:"maintenant", venue:{icon:"🍝", name:"Trattoria Basilico", meta:"Italien · 4 min à pied"}, pos:{top:"30%", left:"38%"}},
-  {name:"Nassim", age:34, dist:"280 m", init:"N", color:"linear-gradient(135deg,var(--pink-soft),var(--pink-deep))", bio:"Commercial en tournée, de passage à Lyon jusqu'à demain. Partant pour un dîner tranquille, pas de blabla business.", tags:["Dîner · 19h30","Japonais"], time:"maintenant", venue:{icon:"🍣", name:"Kyoto Izakaya", meta:"Japonais · 6 min à pied"}, pos:{top:"58%", left:"66%"}},
-  {name:"Elena", age:26, dist:"450 m", init:"E", color:"linear-gradient(225deg,var(--pink-deep),var(--pink))", bio:"Arrivée hier à Lyon pour un nouveau job, je ne connais encore personne. Envie de découvrir un bouchon lyonnais.", tags:["Dîner · 20h30","Local","Nouvel arrivant"], time:"maintenant", venue:{icon:"🍷", name:"Le Bouchon des Cordeliers", meta:"Lyonnais · 8 min à pied"}, pos:{top:"22%", left:"70%"}},
-  {name:"Thomas", age:41, dist:"600 m", init:"T", color:"linear-gradient(45deg,var(--pink),var(--pink-deep))", bio:"De passage pour un salon pro. Amateur de bons vins, ouvert à toute discussion autour d'une table.", tags:["Verre · 19h","Œnologie"], time:"il y a 4 min", venue:{icon:"🍷", name:"Le Bar à Vins de Bellecour", meta:"Bar à vins · 9 min à pied"}, pos:{top:"72%", left:"28%"}},
-  {name:"Sofia", age:31, dist:"750 m", init:"S", color:"linear-gradient(225deg,var(--pink-soft),var(--pink-deep))", bio:"Expatriée depuis 3 mois, je cherche à élargir mon réseau. Toujours partante pour un dîner convivial.", tags:["Dîner · 20h","Réseau"], time:"il y a 6 min", venue:{icon:"🍽️", name:"Le Comptoir d'Antoine", meta:"Bistrot · 11 min à pied"}, pos:{top:"14%", left:"48%"}},
-  {name:"Julien", age:37, dist:"900 m", init:"J", color:"linear-gradient(45deg,var(--pink-deep),var(--pink-soft))", bio:"Photographe freelance en repérage dans le coin. Pas fan de manger seul avec son téléphone.", tags:["Dîner · 21h","Photo"], time:"il y a 9 min", venue:{icon:"🍜", name:"Nam Nam Street Food", meta:"Asiatique · 13 min à pied"}, pos:{top:"80%", left:"58%"}},
+  {name:"Camille", job:"Cheffe de projet événementiel", gender:"Femme", cuisines:["Italien","Végé"], hobbies:["Théâtre","Voyage"], verified:true, age:29, dist:"120 m", init:"C", color:"linear-gradient(135deg,var(--pink),var(--pink-deep))", bio:"En déplacement pour 2 jours, je bosse dans l'événementiel. Envie d'un bon italien ce soir plutôt que room service.", tags:["Dîner · 20h","Italien","Discussion"], time:"maintenant", venue:{icon:"🍝", name:"Trattoria Basilico", meta:"Italien · 4 min à pied"}, pos:{top:"30%", left:"38%"}},
+  {name:"Nassim", job:"Commercial grands comptes", gender:"Homme", cuisines:["Japonais","Street food"], hobbies:["Sport","Musique"], verified:true, age:34, dist:"280 m", init:"N", color:"linear-gradient(135deg,var(--pink-soft),var(--pink-deep))", bio:"Commercial en tournée, de passage à Lyon jusqu'à demain. Partant pour un dîner tranquille, pas de blabla business.", tags:["Dîner · 19h30","Japonais"], time:"maintenant", venue:{icon:"🍣", name:"Kyoto Izakaya", meta:"Japonais · 6 min à pied"}, pos:{top:"58%", left:"66%"}},
+  {name:"Elena", job:"Ingénieure logiciel", gender:"Femme", cuisines:["Lyonnais","Italien"], hobbies:["Randonnée","Cinéma"], verified:true, age:26, dist:"450 m", init:"E", color:"linear-gradient(225deg,var(--pink-deep),var(--pink))", bio:"Arrivée hier à Lyon pour un nouveau job, je ne connais encore personne. Envie de découvrir un bouchon lyonnais.", tags:["Dîner · 20h30","Local","Nouvel arrivant"], time:"maintenant", venue:{icon:"🍷", name:"Le Bouchon des Cordeliers", meta:"Lyonnais · 8 min à pied"}, pos:{top:"22%", left:"70%"}},
+  {name:"Thomas", job:"Consultant indépendant", gender:"Homme", cuisines:["Œnologie","Français"], hobbies:["Vin","Golf"], verified:true, age:41, dist:"600 m", init:"T", color:"linear-gradient(45deg,var(--pink),var(--pink-deep))", bio:"De passage pour un salon pro. Amateur de bons vins, ouvert à toute discussion autour d'une table.", tags:["Verre · 19h","Œnologie"], time:"il y a 4 min", venue:{icon:"🍷", name:"Le Bar à Vins de Bellecour", meta:"Bar à vins · 9 min à pied"}, pos:{top:"72%", left:"28%"}},
+  {name:"Sofia", job:"Architecte", gender:"Femme", cuisines:["Méditerranéen","Végé"], hobbies:["Réseau pro","Design"], verified:true, age:31, dist:"750 m", init:"S", color:"linear-gradient(225deg,var(--pink-soft),var(--pink-deep))", bio:"Expatriée depuis 3 mois, je cherche à élargir mon réseau. Toujours partante pour un dîner convivial.", tags:["Dîner · 20h","Réseau"], time:"il y a 6 min", venue:{icon:"🍽️", name:"Le Comptoir d'Antoine", meta:"Bistrot · 11 min à pied"}, pos:{top:"14%", left:"48%"}},
+  {name:"Julien", job:"Photographe freelance", gender:"Homme", cuisines:["Asiatique","Street food"], hobbies:["Photo","Voyage"], verified:true, age:37, dist:"900 m", init:"J", color:"linear-gradient(45deg,var(--pink-deep),var(--pink-soft))", bio:"Photographe freelance en repérage dans le coin. Pas fan de manger seul avec son téléphone.", tags:["Dîner · 21h","Photo"], time:"il y a 9 min", venue:{icon:"🍜", name:"Nam Nam Street Food", meta:"Asiatique · 13 min à pied"}, pos:{top:"80%", left:"58%"}},
 ];
 
 const conversations = {
@@ -895,6 +911,7 @@ const conversations = {
 const times = ["19h00","19h30","20h00","20h30","21h00"];
 let selectedTime = "20h00";
 let currentSheetPerson = null;
+let currentSheetProfile = null;
 let isSignupFlow = false;
 let currentConfirmName = null;
 let currentThread = null;
@@ -914,7 +931,7 @@ function render(){
 
   peopleList.innerHTML = people.map((p,i)=>`
     <div class="person-card" onclick="openSheet(${i})">
-      <div class="p-avatar" style="background:${p.color}">${p.init}<div class="dot-online"></div></div>
+      <div class="p-avatar" style="background:${p.color}">${avatarInner(p)}<div class="dot-online"></div></div>
       <div class="p-body">
         <div class="p-top"><div class="p-name">${p.name}${p.age ? ', '+p.age : ''}</div><div class="p-dist">${p.dist}</div></div>
         <div class="p-bio">${p.bio}</div>
@@ -942,18 +959,92 @@ function setView(v){
   label.style.display = v==='list' ? 'flex' : 'none';
 }
 
-function openSheet(i){
-  currentSheetPerson = i;
-  const p = people[i];
-  document.getElementById('sheetAvatar').textContent = p.init;
-  document.getElementById('sheetAvatar').style.background = p.color;
-  document.getElementById('sheetName').textContent = p.name + ', ' + p.age;
-  document.getElementById('sheetMeta').textContent = p.dist + ' · disponible ' + p.time;
-  document.getElementById('sheetBio').textContent = p.bio;
-  document.getElementById('sheetTags').innerHTML = p.tags.map((t,ti)=>`<div class="tag ${ti===0?'time':''}">${t}</div>`).join('');
+function avatarInner(p){
+  if(p && p.photo) return `<img src="${p.photo}" alt="">`;
+  return (p && p.init) ? p.init : '?';
+}
+
+/* Rendu unique de fiche profil, réutilisé depuis le Radar, une conversation ou un plan. */
+function renderProfileSheet(p, opts){
+  opts = opts || {};
+  currentSheetProfile = p;
+
+  const avatar = document.getElementById('sheetAvatar');
+  avatar.innerHTML = avatarInner(p);
+  avatar.style.background = p.color || '';
+
+  document.getElementById('sheetName').textContent = p.name + (p.age ? ', ' + p.age : '');
+
+  const meta = [];
+  if(p.job) meta.push(p.job);
+  if(p.gender) meta.push(p.gender);
+  if(p.city) meta.push(p.city);
+  if(p.dist) meta.push(p.dist);
+  if(!meta.length && p.time) meta.push('disponible ' + p.time);
+  document.getElementById('sheetMeta').textContent = meta.join(' · ');
+
+  document.getElementById('sheetVerified').style.display = (p.verified === false) ? 'none' : 'inline-flex';
+
+  const bio = (p.bio || '').trim();
+  document.getElementById('sheetBio').textContent = bio;
+  document.getElementById('sheetBioSection').style.display = bio ? 'block' : 'none';
+
+  const tags = p.tags || [];
+  document.getElementById('sheetTags').innerHTML = tags.map((t,ti)=>`<div class="tag ${ti===0?'time':''}">${t}</div>`).join('');
+  document.getElementById('sheetIntentSection').style.display = tags.length ? 'block' : 'none';
+
+  const cuisines = p.cuisines || [];
+  document.getElementById('sheetCuisines').innerHTML = cuisines.map(t=>`<div class="tag">${t}</div>`).join('');
+  document.getElementById('sheetCuisineSection').style.display = cuisines.length ? 'block' : 'none';
+
+  const hobbies = p.hobbies || [];
+  document.getElementById('sheetHobbies').innerHTML = hobbies.map(t=>`<div class="tag">${t}</div>`).join('');
+  document.getElementById('sheetHobbySection').style.display = hobbies.length ? 'block' : 'none';
+
+  document.getElementById('sheetHelloBtn').style.display = opts.canSayHello ? 'block' : 'none';
+
   showProfileView();
   document.getElementById('sheet').classList.add('open');
   document.getElementById('sheetBackdrop').classList.add('open');
+}
+
+function openSheet(i){
+  currentSheetPerson = i;
+  renderProfileSheet(people[i], {canSayHello:true});
+}
+
+/* Depuis une conversation : voir avec qui on parle avant d'aller plus loin. */
+function openProfileFromThread(){
+  if(!currentThread) return;
+  const c = conversations[currentThread];
+  if(LIVE.on && c && c.liveOtherId){
+    openProfileById(c.liveOtherId, {canSayHello:false});
+    return;
+  }
+  renderProfileSheet(personByName(currentThread), {canSayHello:false});
+}
+
+/* Depuis un plan proposé : voir qui propose avant de dire bonjour. */
+function openPlanProfile(i){
+  const plan = plans[i];
+  if(!plan) return;
+  if(plan.profile){
+    const person = esProfileToPerson(plan.profile);
+    person.tags = [MEAL_EMOJI[plan.mealType] + ' ' + plan.when + ' · ' + plan.slot];
+    renderProfileSheet(person, {canSayHello:true});
+    return;
+  }
+  renderProfileSheet({
+    name: plan.name,
+    init: (plan.name || '?')[0].toUpperCase(),
+    color: esColorFor(plan.name || ''),
+    job: plan.job || '',
+    bio: plan.bio || '',
+    city: [plan.city, plan.area].filter(Boolean).join(' · '),
+    cuisines: plan.cuisines || [],
+    hobbies: plan.hobbies || [],
+    tags: [(MEAL_EMOJI[plan.mealType] || '🍜') + ' ' + plan.when + ' · ' + plan.slot],
+  }, {canSayHello:true});
 }
 function closeSheet(){
   document.getElementById('sheet').classList.remove('open');
@@ -965,7 +1056,8 @@ function showProfileView(){
 }
 
 function sayHello(){
-  const p = people[currentSheetPerson];
+  const p = currentSheetProfile;
+  if(!p) return;
   if(!conversations[p.name]){
     conversations[p.name] = {status:'pending', time:'maintenant', unread:true, log:[]};
   } else {
@@ -1038,7 +1130,7 @@ function renderMessages(){
     const preview = pending ? 'En attente de réponse…' : (c.preview || '');
     return `
     <button class="msg-item" onclick="openThread('${name}')">
-      <div class="p-avatar" style="width:48px;height:48px;border-radius:14px;font-size:16px;background:${p.color}">${p.init}</div>
+      <div class="p-avatar" style="width:48px;height:48px;border-radius:14px;font-size:16px;background:${p.color}">${avatarInner(p)}</div>
       <div class="msg-body">
         <div class="msg-top"><div class="msg-name">${name}</div><div class="msg-time">${c.time}</div></div>
         <div class="msg-preview" style="${pending?'color:var(--pending); font-style:italic;':''}">${preview}</div>
@@ -1054,7 +1146,7 @@ function openThread(name){
   const c = conversations[name];
   c.unread = false;
   const p = personByName(name);
-  document.getElementById('threadAvatar').textContent = p.init;
+  document.getElementById('threadAvatar').innerHTML = avatarInner(p);
   document.getElementById('threadAvatar').style.background = p.color;
   document.getElementById('threadName').textContent = name;
   document.getElementById('threadSub').textContent = c.status === 'pending' ? 'en attente de réponse' : 'en ligne';
@@ -1071,7 +1163,7 @@ function renderThreadBody(){
     const p = personByName(currentThread);
     body.innerHTML = `
       <div class="pending-card">
-        <div class="p-avatar" style="background:${p.color}">${p.init}</div>
+        <div class="p-avatar" style="background:${p.color}">${avatarInner(p)}</div>
         <div class="pending-title">Tu as dit bonjour à ${currentThread} 👋</div>
         <div class="pending-sub">La discussion ne s'ouvre que si ${currentThread} accepte, à son tour. Personne ne peut écrire tant que ce n'est pas réciproque.</div>
         <button class="demo-btn" onclick="simulateAccept('${currentThread}')">Simuler : ${currentThread} accepte</button>
@@ -1132,9 +1224,25 @@ function selectSingle(el, groupId){
 function onPhotoChange(e){
   const file = e.target.files[0];
   if(!file) return;
-  const url = URL.createObjectURL(file);
-  document.getElementById('editorPhotoPreview').innerHTML = '<img src="'+url+'" alt="">';
-  document.getElementById('profileAvatar').innerHTML = '<img src="'+url+'" alt="" style="width:100%;height:100%;object-fit:cover;">';
+  const reader = new FileReader();
+  reader.onload = function(ev){
+    const img = new Image();
+    img.onload = function(){
+      // downscale so the photo can travel with the profile without bloating requests
+      const max = 320;
+      const scale = Math.min(1, max / Math.max(img.width, img.height));
+      const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      let dataUrl;
+      try{ dataUrl = canvas.toDataURL('image/jpeg', 0.82); }catch(err){ dataUrl = ev.target.result; }
+      try{ localStorage.setItem('es_photo', dataUrl); }catch(err){}
+      esApplyOwnPhoto(dataUrl);
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
 }
 function startSignup(){ isSignupFlow = true; openEditor(); }
 function openEditor(){ document.getElementById('editor').classList.add('open'); }
@@ -1159,8 +1267,12 @@ const MEAL_EMOJI = {cafe:'☕', dej:'🥗', diner:'🍜', verre:'🍸'};
 const MEAL_WORD = {cafe:'café', dej:'déjeuner', diner:'dîner', verre:'verre'};
 
 const plans = [
-  {name:'Marc', mealType:'diner', when:'Demain soir', slot:'19h – 21h', city:'Lyon', area:'6e arrondissement', restaurant:''},
-  {name:'Aline', mealType:'cafe', when:'Ce week-end', slot:'12h – 14h', city:'Lyon', area:'Presqu’île', restaurant:'Le Sucre'},
+  {name:'Marc', mealType:'diner', when:'Demain soir', slot:'19h – 21h', city:'Lyon', area:'6e arrondissement', restaurant:'',
+   job:'Kinésithérapeute', bio:"De passage deux jours pour une formation, je préfère dîner accompagné que devant la télé de l'hôtel.",
+   cuisines:['Lyonnais','Italien'], hobbies:['Course à pied','Cinéma']},
+  {name:'Aline', mealType:'cafe', when:'Ce week-end', slot:'12h – 14h', city:'Lyon', area:'Presqu’île', restaurant:'Le Sucre',
+   job:'Traductrice', bio:"Nouvelle à Lyon, j'aimerais rencontrer des gens autour d'un café le week-end.",
+   cuisines:['Brunch','Végé'], hobbies:['Lecture','Expos']},
 ];
 
 function getActiveChip(groupId){
@@ -1236,7 +1348,7 @@ function renderPlans(){
   el.innerHTML = filtered.map(p=>{
     const i = plans.indexOf(p);
     return `
-    <div class="plan-card" onclick="planSayHello(${i})">
+    <div class="plan-card" onclick="openPlanProfile(${i})">
       <div class="plan-icon">${MEAL_EMOJI[p.mealType] || '🍜'}</div>
       <div class="p-body">
         <div class="plan-name">${p.name}</div>
@@ -1247,22 +1359,6 @@ function renderPlans(){
   }).join('');
 }
 renderPlans();
-
-function planSayHello(i){
-  const p = plans[i];
-  if(!p) return;
-  if(LIVE.on && p.liveId){
-    fetch('/api/hello', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({
-      id: LIVE.me.id, name: LIVE.me.name, targetId: p.liveId
-    })}).catch(()=>{}).then(()=>esPollConversations()).then(()=>{
-      showToast('Demande envoyée à ' + p.name);
-      renderMessages();
-      showScreen('messages');
-    });
-  } else {
-    showToast('Dire bonjour à un plan est possible en mode direct, à deux appareils connectés');
-  }
-}
 
 function applyLocation(){
   const city = document.getElementById('locCity').value.trim() || 'Lyon';
@@ -1363,16 +1459,102 @@ function esPosFor(id){ const h=esHash(id); return { top:(18+(h%65))+'%', left:(1
 const ES_INTENT_LABEL = {cafe:'☕ Café', dej:'🥗 Déjeuner', diner:'🍜 Dîner', verre:'🍸 Verre'};
 function esMarkSeen(convoId, count){ if(convoId) localStorage.setItem('es_seen_'+convoId, String(count)); }
 
+/* ---- profil local : ce que les autres verront de toi ---- */
+const ES_PROFILE_KEY = 'es_profile_v1';
+
+function esLocalProfile(){
+  try{ return JSON.parse(localStorage.getItem(ES_PROFILE_KEY) || '{}'); }catch(e){ return {}; }
+}
+function esActiveChipTexts(groupId){
+  return Array.from(document.querySelectorAll('#'+groupId+' .chip.active')).map(c=>c.textContent.trim());
+}
+function esSaveLocalProfile(){
+  const genderChip = document.querySelector('#genderGroup .chip.active');
+  const val = id => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
+  const prof = {
+    name: val('fPrenom'),
+    age: val('fAge'),
+    job: val('fJob'),
+    bio: val('fBio'),
+    gender: genderChip ? genderChip.textContent.trim() : '',
+    cuisines: esActiveChipTexts('cuisineGroup'),
+    hobbies: esActiveChipTexts('hobbyGroup'),
+    photo: localStorage.getItem('es_photo') || '',
+    verified: true,
+  };
+  localStorage.setItem(ES_PROFILE_KEY, JSON.stringify(prof));
+  return prof;
+}
+function esSetChips(groupId, values){
+  if(!values || !values.length) return;
+  const wanted = values.map(v=>v.toLowerCase());
+  document.querySelectorAll('#'+groupId+' .chip').forEach(c=>{
+    c.classList.toggle('active', wanted.indexOf(c.textContent.trim().toLowerCase()) !== -1);
+  });
+}
+function esApplyOwnPhoto(url){
+  if(!url) return;
+  const prev = document.getElementById('editorPhotoPreview');
+  const avat = document.getElementById('profileAvatar');
+  if(prev) prev.innerHTML = '<img src="'+url+'" alt="">';
+  if(avat) avat.innerHTML = '<img src="'+url+'" alt="" style="width:100%;height:100%;object-fit:cover;">';
+}
+function esRestoreProfileUI(){
+  const p = esLocalProfile();
+  if(!p || !Object.keys(p).length) return;
+  const set = (id, v) => { const el = document.getElementById(id); if(el && v) el.value = v; };
+  set('fPrenom', p.name); set('fAge', p.age); set('fJob', p.job); set('fBio', p.bio);
+  if(p.gender) esSetChips('genderGroup', [p.gender]);
+  esSetChips('cuisineGroup', p.cuisines);
+  esSetChips('hobbyGroup', p.hobbies);
+  esApplyOwnPhoto(p.photo);
+  if(p.name) document.getElementById('profileName').textContent = p.name;
+  if(p.age || p.job){
+    document.getElementById('profileSub').textContent =
+      [p.age ? p.age + ' ans' : '', p.job].filter(Boolean).join(' · ');
+  }
+}
+
+/* Profil serveur -> forme attendue par renderProfileSheet */
+function esProfileToPerson(prof){
+  prof = prof || {};
+  return {
+    name: prof.name || '?',
+    age: prof.age || '',
+    job: prof.job || '',
+    gender: prof.gender || '',
+    bio: prof.bio || '',
+    photo: prof.photo || '',
+    cuisines: prof.cuisines || [],
+    hobbies: prof.hobbies || [],
+    verified: prof.verified !== false,
+    init: (prof.name || '?')[0].toUpperCase(),
+    color: esColorFor(prof.id || prof.name || ''),
+    liveId: prof.id,
+    tags: prof.intent ? [ES_INTENT_LABEL[prof.intent] || ES_INTENT_LABEL.diner] : [],
+  };
+}
+
+async function openProfileById(id, opts){
+  if(!id) return;
+  try{
+    const r = await fetch('/api/profile?who='+encodeURIComponent(id), {cache:'no-store'});
+    const data = await r.json();
+    renderProfileSheet(esProfileToPerson(data.profile), opts || {});
+  }catch(e){}
+}
+
 async function esSendPresence(){
   if(!LIVE.on || !LIVE.me) return;
   const toggle = document.getElementById('availToggle');
   const available = toggle ? toggle.classList.contains('on') : true;
   const activeChip = document.querySelector('.intent-select .chip.active');
   const intentKey = activeChip ? activeChip.getAttribute('data-i') : 'diner';
+  const payload = Object.assign({}, esLocalProfile(), {
+    id: LIVE.me.id, name: LIVE.me.name, intent: intentKey, available
+  });
   try{
-    await fetch('/api/presence', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({
-      id: LIVE.me.id, name: LIVE.me.name, bio: localStorage.getItem('es_live_bio') || '', intent: intentKey, available
-    })});
+    await fetch('/api/presence', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
   }catch(e){}
 }
 
@@ -1383,12 +1565,13 @@ async function esPollPeople(){
     const data = await r.json();
     people.length = 0;
     (data.people||[]).forEach(p=>{
-      people.push({
-        name:p.name, age:'', init:(p.name[0]||'?').toUpperCase(), color:esColorFor(p.id),
-        dist:'en direct', bio:p.bio || 'Dispo maintenant, viens dire bonjour 👋',
-        tags:[ES_INTENT_LABEL[p.intent] || ES_INTENT_LABEL.diner], time:'maintenant',
-        pos:esPosFor(p.id), liveId:p.id,
-      });
+      const person = esProfileToPerson(p);
+      person.dist = 'en direct';
+      person.time = 'maintenant';
+      person.bio = p.bio || 'Dispo maintenant, viens dire bonjour 👋';
+      person.tags = [ES_INTENT_LABEL[p.intent] || ES_INTENT_LABEL.diner];
+      person.pos = esPosFor(p.id);
+      people.push(person);
     });
     render();
   }catch(e){}
@@ -1404,6 +1587,7 @@ async function esPollPlans(){
       plans.push({
         name:p.name, mealType:p.mealType, when:p.when, slot:p.slot,
         city:p.city, area:p.area, restaurant:p.restaurant, liveId:p.id,
+        profile:p.profile,
       });
     });
     renderPlans();
@@ -1465,7 +1649,7 @@ setIntent = function(el){ _offSetIntent(el); esSendPresence(); };
 const _offSayHello = sayHello;
 sayHello = function(){
   if(!LIVE.on) return _offSayHello();
-  const p = people[currentSheetPerson];
+  const p = currentSheetProfile;
   if(!p || !p.liveId) return _offSayHello();
   closeSheet();
   fetch('/api/hello', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({
@@ -1491,14 +1675,14 @@ renderThreadBody = function(){
     if(c.iAmInitiator){
       body.innerHTML = `
         <div class="pending-card">
-          <div class="p-avatar" style="background:${p.color}">${p.init}</div>
+          <div class="p-avatar" style="background:${p.color}">${avatarInner(p)}</div>
           <div class="pending-title">Tu as dit bonjour à ${currentThread} 👋</div>
           <div class="pending-sub">En attente de sa réponse, en direct...</div>
         </div>`;
     } else {
       body.innerHTML = `
         <div class="pending-card">
-          <div class="p-avatar" style="background:${p.color}">${p.init}</div>
+          <div class="p-avatar" style="background:${p.color}">${avatarInner(p)}</div>
           <div class="pending-title">${currentThread} te dit bonjour 👋</div>
           <div class="pending-sub">Accepte pour commencer à discuter.</div>
           <div class="btn-row" style="margin-top:18px; max-width:230px; margin-left:auto; margin-right:auto;">
@@ -1536,7 +1720,7 @@ openThread = function(name){
   const c = conversations[name];
   if(c) c.unread = false;
   const p = personByName(name);
-  document.getElementById('threadAvatar').textContent = p.init;
+  document.getElementById('threadAvatar').innerHTML = avatarInner(p);
   document.getElementById('threadAvatar').style.background = p.color;
   document.getElementById('threadName').textContent = name;
   document.getElementById('threadSub').textContent = (c && c.status==='pending') ? 'en attente' : 'en ligne';
@@ -1586,9 +1770,11 @@ confirmMeeting = function(){
 
 const _offSaveProfile = saveProfile;
 saveProfile = function(){
+  esSaveLocalProfile();
   _offSaveProfile();
   const name = document.getElementById('fPrenom').value.trim();
-  if(name){ esSaveName(name); esSendPresence(); }
+  if(name){ esSaveName(name); }
+  esSendPresence();
 };
 
 async function initLiveMode(){
@@ -1596,10 +1782,16 @@ async function initLiveMode(){
   if(!ok) return;
   LIVE.on = true;
   LIVE.me = esLoadIdentity();
-  if(!localStorage.getItem('es_live_named')){
-    const chosen = prompt('Ton prénom pour ce test en direct ?', LIVE.me.name);
+  // Un profil déjà rempli fait foi ; sinon on demande le prénom, sans jamais
+  // laisser une popup bloquée par le navigateur tuer le mode direct.
+  const savedProfile = esLocalProfile();
+  if(savedProfile && savedProfile.name){
+    esSaveName(savedProfile.name);
+  } else if(!localStorage.getItem('es_live_named')){
+    let chosen = null;
+    try{ chosen = prompt('Ton pr\u00e9nom pour ce test en direct\u00a0?', LIVE.me.name); }catch(e){}
     if(chosen && chosen.trim()){ esSaveName(chosen.trim()); }
-    localStorage.setItem('es_live_named', '1');
+    try{ localStorage.setItem('es_live_named', '1'); }catch(e){}
   }
   Object.keys(conversations).forEach(k=>delete conversations[k]);
   esShowLiveBadge();
@@ -1612,6 +1804,7 @@ async function initLiveMode(){
   esPollPlans();
   setInterval(esPollPlans, 4000);
 }
+esRestoreProfileUI();
 initLiveMode();
 </script>
 
