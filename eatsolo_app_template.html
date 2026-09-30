@@ -877,6 +877,7 @@
   <div class="stage-note">Prototype cliquable &mdash; <b>EatSolo</b>. Pens&eacute; pour revue interne : navigue entre les &eacute;crans, ouvre un profil, propose un rendez-vous, regarde la conversation se cr&eacute;er.</div>
 </div>
 
+<script>__MQTT_JS__</script>
 <script>
 const people = [
   {name:"Camille", job:"Cheffe de projet événementiel", gender:"Femme", cuisines:["Italien","Végé"], hobbies:["Théâtre","Voyage"], verified:true, age:29, dist:"120 m", init:"C", color:"linear-gradient(135deg,var(--pink),var(--pink-deep))", bio:"En déplacement pour 2 jours, je bosse dans l'événementiel. Envie d'un bon italien ce soir plutôt que room service.", tags:["Dîner · 20h","Italien","Discussion"], time:"maintenant", venue:{icon:"🍝", name:"Trattoria Basilico", meta:"Italien · 4 min à pied"}, pos:{top:"30%", left:"38%"}},
@@ -1364,7 +1365,7 @@ function applyLocation(){
   document.getElementById('cityPillText').textContent = short;
 
   if(LIVE.on){
-    fetch('/api/plan', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({
+    esApi('/api/plan', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({
       id: LIVE.me.id, name: LIVE.me.name, city, area, when, slot, mealType: mealKey, restaurant
     })}).catch(()=>{});
   }
@@ -1372,7 +1373,7 @@ function applyLocation(){
 }
 function clearPlan(){
   if(LIVE.on){
-    fetch('/api/plan/clear', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id: LIVE.me.id})}).catch(()=>{});
+    esApi('/api/plan/clear', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id: LIVE.me.id})}).catch(()=>{});
   }
   document.getElementById('planRestaurant').value = '';
   showToast('Plan effacé');
@@ -1433,8 +1434,243 @@ function esSaveName(name){
   localStorage.setItem('es_live_name', name);
   if(LIVE.me) LIVE.me.name = name;
 }
+/* ============================================================================
+   TRANSPORT
+   Deux modes, même API interne :
+   - "server" : un serveur local sert la page (server.py) -> vrai fetch.
+   - "relay"  : page servie en statique (GitHub Pages) -> aucun serveur, la
+     synchro passe par un relais public MQTT. Chaque appareil ne publie que
+     SES propres données (présence, plan, sa moitié de conversation), en
+     messages retenus, et reconstitue l'état commun en fusionnant.
+   ============================================================================ */
+const ES_DEFAULT_ROOM = 'fm-a7k3q9x2';
+const ES_RELAY_URL = 'wss://broker.emqx.io:8084/mqtt';
+const NET = { mode:'none', mqtt:null, room:ES_DEFAULT_ROOM, peers:{}, plansMap:{}, convos:{} };
+
+function esRoom(){
+  const m = location.search.match(/[?&]r=([A-Za-z0-9_-]{3,32})/);
+  return m ? m[1] : ES_DEFAULT_ROOM;
+}
+function esBase(){ return 'eatsolo/v1/' + NET.room; }
+function esConvoKey(a, b){ return [a, b].sort().join('~'); }
+
+function esPub(topic, obj){
+  if(!NET.mqtt) return;
+  try{ NET.mqtt.publish(topic, JSON.stringify(obj), {qos:0, retain:true}); }catch(e){}
+}
+function esSaveSide(key, who, payload){
+  NET.convos[key] = NET.convos[key] || {};
+  NET.convos[key][who] = payload;
+  esPub(esBase()+'/c/'+key+'/'+who, payload);
+}
+
+function esOnRelayMessage(topic, payload){
+  let data;
+  try{ data = JSON.parse(payload.toString()); }catch(e){ return; }
+  const parts = topic.split('/');           // eatsolo / v1 / <room> / <kind> / ...
+  const kind = parts[3];
+  if(kind === 'p' && parts[4]) NET.peers[parts[4]] = data;
+  else if(kind === 'pl' && parts[4]) NET.plansMap[parts[4]] = data;
+  else if(kind === 'c' && parts[4] && parts[5]){
+    NET.convos[parts[4]] = NET.convos[parts[4]] || {};
+    NET.convos[parts[4]][parts[5]] = data;
+  }
+}
+
+function esConnectRelay(){
+  return new Promise(resolve => {
+    if(typeof mqtt === 'undefined'){ resolve(false); return; }
+    NET.room = esRoom();
+    let settled = false;
+    const finish = ok => { if(!settled){ settled = true; resolve(ok); } };
+    try{
+      const client = mqtt.connect(ES_RELAY_URL, {
+        clientId: 'es-' + Math.random().toString(16).slice(2),
+        keepalive: 30, reconnectPeriod: 4000, connectTimeout: 8000, clean: true,
+      });
+      NET.mqtt = client;
+      client.on('connect', () => { client.subscribe(esBase()+'/#', {qos:0}); finish(true); });
+      client.on('message', esOnRelayMessage);
+      client.on('error', () => finish(false));
+      setTimeout(() => finish(false), 9000);
+    }catch(e){ finish(false); }
+  });
+}
+
+/* Fusionne les deux moitiés d'une conversation en un état unique. */
+function esConvoMerged(key){
+  const sides = NET.convos[key];
+  if(!sides) return null;
+  const ids = Object.keys(sides);
+  if(!ids.length) return null;
+  const initiator = ids.map(i=>sides[i].initiator).find(Boolean) || null;
+  const recipient = ids.find(i => i !== initiator);
+  let status = 'pending';
+  if(recipient && sides[recipient] && sides[recipient].status) status = sides[recipient].status;
+  const msgs = ids.reduce((acc,i)=>acc.concat(sides[i].msgs || []), [])
+                  .sort((a,b)=>(a.ts||0)-(b.ts||0));
+  return {key, sides, ids, initiator, status, msgs};
+}
+function esPeerNameIn(key, otherId){
+  const sides = NET.convos[key] || {};
+  return (sides[otherId] && sides[otherId].fromName) || (NET.peers[otherId] || {}).name || '?';
+}
+function esMyName(){
+  const prof = esLocalProfile();
+  return (prof && prof.name) || (LIVE.me && LIVE.me.name) || 'quelqu\'un';
+}
+
+/* Implémente l'API interne sans serveur, à partir de l'état reçu du relais. */
+function esApiRelay(path, opts){
+  const url = new URL(path, location.origin);
+  const q = url.searchParams;
+  const route = url.pathname;
+  const body = (opts && opts.body) ? JSON.parse(opts.body) : {};
+  const me = LIVE.me ? LIVE.me.id : '';
+  const now = Date.now() / 1000;
+  const reply = data => ({ ok:true, json: async () => data });
+
+  if(route === '/api/ping') return reply({ok:true});
+
+  if(route === '/api/presence'){
+    const payload = Object.assign({}, body, {ts: now});
+    NET.peers[me] = payload;
+    esPub(esBase()+'/p/'+me, payload);
+    return reply({ok:true});
+  }
+
+  if(route === '/api/people'){
+    const out = [];
+    Object.keys(NET.peers).forEach(id => {
+      const peer = NET.peers[id];
+      if(id === me || !peer || !peer.available) return;
+      if(now - (peer.ts || 0) > 30) return;            // parti depuis trop longtemps
+      out.push(Object.assign({}, peer, {id}));
+    });
+    return reply({people: out});
+  }
+
+  if(route === '/api/profile'){
+    const who = q.get('who');
+    const peer = NET.peers[who] || {};
+    return reply({profile: Object.assign({}, peer, {id: who, name: peer.name || '?'})});
+  }
+
+  if(route === '/api/plans'){
+    const out = [];
+    Object.keys(NET.plansMap).forEach(id => {
+      const plan = NET.plansMap[id];
+      if(id === me || !plan || !plan.active) return;
+      const peer = NET.peers[id] || {};
+      out.push(Object.assign({}, plan, {
+        id, profile: Object.assign({}, peer, {id, name: peer.name || plan.name || '?'})
+      }));
+    });
+    return reply({plans: out});
+  }
+
+  if(route === '/api/plan'){
+    const plan = Object.assign({}, body, {active:true, ts:now});
+    NET.plansMap[me] = plan;
+    esPub(esBase()+'/pl/'+me, plan);
+    return reply({ok:true});
+  }
+  if(route === '/api/plan/clear'){
+    const plan = Object.assign({}, NET.plansMap[me] || {}, {active:false, ts:now});
+    NET.plansMap[me] = plan;
+    esPub(esBase()+'/pl/'+me, plan);
+    return reply({ok:true});
+  }
+
+  if(route === '/api/conversations'){
+    const out = [];
+    Object.keys(NET.convos).forEach(key => {
+      if(key.indexOf(me) === -1) return;
+      const merged = esConvoMerged(key);
+      if(!merged) return;
+      const otherId = key.split('~').find(i => i !== me);
+      const last = merged.msgs[merged.msgs.length - 1];
+      out.push({
+        convo: key, otherId, otherName: esPeerNameIn(key, otherId),
+        status: merged.status, iAmInitiator: merged.initiator === me,
+        preview: last ? last.text : '', logLength: merged.msgs.length,
+      });
+    });
+    return reply({conversations: out});
+  }
+
+  if(route === '/api/thread'){
+    const otherId = q.get('with');
+    const key = esConvoKey(me, otherId);
+    const merged = esConvoMerged(key);
+    if(!merged) return reply({status:null, log:[], otherName:''});
+    return reply({
+      status: merged.status,
+      iAmInitiator: merged.initiator === me,
+      otherName: esPeerNameIn(key, otherId),
+      log: merged.msgs.map(m => ({who: m.kind === 'system' ? 'system' : m.from, text: m.text, ts: m.ts})),
+    });
+  }
+
+  if(route === '/api/hello'){
+    const key = esConvoKey(me, body.targetId);
+    const mine = (NET.convos[key] || {})[me] || {};
+    esSaveSide(key, me, {
+      from: me, fromName: body.name, to: body.targetId,
+      initiator: me, status: mine.status || 'pending',
+      msgs: (mine.msgs || []).concat([{from: me, kind:'system', text: body.name + ' a dit bonjour 👋', ts: now}]),
+    });
+    return reply({ok:true});
+  }
+
+  if(route === '/api/respond'){
+    const key = esConvoKey(me, body.targetId);
+    const sides = NET.convos[key] || {};
+    const mine = sides[me] || {};
+    const theirs = sides[body.targetId] || {};
+    const msgs = (mine.msgs || []).slice();
+    if(body.accept) msgs.push({from: me, kind:'system', text: esMyName() + ' a accepté de discuter 🎉', ts: now});
+    esSaveSide(key, me, {
+      from: me, fromName: esMyName(), to: body.targetId,
+      initiator: mine.initiator || theirs.initiator || body.targetId,
+      status: body.accept ? 'accepted' : 'declined',
+      msgs,
+    });
+    return reply({ok:true});
+  }
+
+  if(route === '/api/message' || route === '/api/meeting'){
+    const key = esConvoKey(me, body.targetId);
+    const sides = NET.convos[key] || {};
+    const mine = sides[me] || {};
+    const entry = (route === '/api/message')
+      ? {from: me, kind:'text', text: body.text, ts: now}
+      : {from: me, kind:'system', text: 'Rendez-vous proposé · ' + body.venue + ' à ' + body.time, ts: now};
+    esSaveSide(key, me, {
+      from: me, fromName: esMyName(), to: body.targetId,
+      initiator: mine.initiator || (sides[body.targetId] || {}).initiator || null,
+      status: mine.status || 'pending',
+      msgs: (mine.msgs || []).concat([entry]),
+    });
+    return reply({ok:true});
+  }
+
+  return reply({error:'not found'});
+}
+
+function esApi(path, opts){
+  if(NET.mode === 'server') return fetch(path, opts);
+  return Promise.resolve(esApiRelay(path, opts));
+}
+
 async function esPing(){
-  try{ const r = await fetch('/api/ping', {cache:'no-store'}); return r.ok; }catch(e){ return false; }
+  try{
+    const r = await fetch('/api/ping', {cache:'no-store'});
+    if(r.ok){ NET.mode = 'server'; return true; }
+  }catch(e){}
+  const ok = await esConnectRelay();
+  NET.mode = ok ? 'relay' : 'none';
+  return ok;
 }
 function esShowLiveBadge(){ document.getElementById('liveBadge').classList.add('show'); }
 
@@ -1531,7 +1767,7 @@ function esProfileToPerson(prof){
 async function openProfileById(id, opts){
   if(!id) return;
   try{
-    const r = await fetch('/api/profile?who='+encodeURIComponent(id), {cache:'no-store'});
+    const r = await esApi('/api/profile?who='+encodeURIComponent(id), {cache:'no-store'});
     const data = await r.json();
     renderProfileSheet(esProfileToPerson(data.profile), opts || {});
   }catch(e){}
@@ -1547,14 +1783,14 @@ async function esSendPresence(){
     id: LIVE.me.id, name: LIVE.me.name, intent: intentKey, available
   });
   try{
-    await fetch('/api/presence', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+    await esApi('/api/presence', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
   }catch(e){}
 }
 
 async function esPollPeople(){
   if(!LIVE.on) return;
   try{
-    const r = await fetch('/api/people?id='+encodeURIComponent(LIVE.me.id), {cache:'no-store'});
+    const r = await esApi('/api/people?id='+encodeURIComponent(LIVE.me.id), {cache:'no-store'});
     const data = await r.json();
     people.length = 0;
     (data.people||[]).forEach(p=>{
@@ -1573,7 +1809,7 @@ async function esPollPeople(){
 async function esPollPlans(){
   if(!LIVE.on) return;
   try{
-    const r = await fetch('/api/plans?id='+encodeURIComponent(LIVE.me.id), {cache:'no-store'});
+    const r = await esApi('/api/plans?id='+encodeURIComponent(LIVE.me.id), {cache:'no-store'});
     const data = await r.json();
     plans.length = 0;
     (data.plans||[]).forEach(p=>{
@@ -1590,7 +1826,7 @@ async function esPollPlans(){
 async function esPollConversations(){
   if(!LIVE.on) return;
   try{
-    const r = await fetch('/api/conversations?id='+encodeURIComponent(LIVE.me.id), {cache:'no-store'});
+    const r = await esApi('/api/conversations?id='+encodeURIComponent(LIVE.me.id), {cache:'no-store'});
     const data = await r.json();
     (data.conversations||[]).forEach(c=>{
       const prev = conversations[c.otherName];
@@ -1612,7 +1848,7 @@ async function esRefreshThread(){
   const otherId = c && c.liveOtherId;
   if(!otherId) return;
   try{
-    const r = await fetch('/api/thread?id='+encodeURIComponent(LIVE.me.id)+'&with='+encodeURIComponent(otherId), {cache:'no-store'});
+    const r = await esApi('/api/thread?id='+encodeURIComponent(LIVE.me.id)+'&with='+encodeURIComponent(otherId), {cache:'no-store'});
     const data = await r.json();
     conversations[currentThread].status = data.status || 'pending';
     conversations[currentThread].log = data.log || [];
@@ -1628,7 +1864,7 @@ async function esFillPendingSummary(otherId){
   const el = document.getElementById('pendingSummary');
   if(!el || !otherId) return;
   try{
-    const r = await fetch('/api/profile?who='+encodeURIComponent(otherId), {cache:'no-store'});
+    const r = await esApi('/api/profile?who='+encodeURIComponent(otherId), {cache:'no-store'});
     const prof = (await r.json()).profile || {};
     const bits = [prof.age ? prof.age + ' ans' : '', prof.job, prof.gender].filter(Boolean).join(' · ');
     const tags = [].concat(prof.cuisines || [], prof.hobbies || []).slice(0, 4);
@@ -1642,7 +1878,7 @@ async function esRespond(accept){
   const c = conversations[currentThread];
   if(!c || !c.liveOtherId) return;
   try{
-    await fetch('/api/respond', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({
+    await esApi('/api/respond', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({
       id: LIVE.me.id, targetId: c.liveOtherId, accept
     })});
   }catch(e){}
@@ -1660,7 +1896,7 @@ sayHello = function(){
   const p = currentSheetProfile;
   if(!p || !p.liveId) return _offSayHello();
   closeSheet();
-  fetch('/api/hello', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({
+  esApi('/api/hello', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({
     id: LIVE.me.id, name: LIVE.me.name, targetId: p.liveId
   })}).catch(()=>{}).then(()=>esPollConversations()).then(()=>{
     showToast('Demande envoyée à ' + p.name);
@@ -1759,7 +1995,7 @@ sendThreadMsg = function(){
   const c = conversations[currentThread];
   if(!c || !c.liveOtherId) return;
   field.value = '';
-  fetch('/api/message', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({
+  esApi('/api/message', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({
     id: LIVE.me.id, targetId: c.liveOtherId, text
   })}).catch(()=>{}).then(()=>esRefreshThread());
 };
@@ -1772,7 +2008,7 @@ confirmMeeting = function(){
   const venueName = document.getElementById('venueName').value.trim() || 'un lieu à définir';
   closeSheet();
   if(!c || !c.liveOtherId){ showToast('Rendez-vous proposé à ' + name); return; }
-  fetch('/api/meeting', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({
+  esApi('/api/meeting', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({
     id: LIVE.me.id, targetId: c.liveOtherId, venue: venueName, time: selectedTime
   })}).catch(()=>{}).then(()=>{
     showToast('Rendez-vous proposé à ' + name);

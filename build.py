@@ -29,6 +29,12 @@ def main():
         assert placeholder in template, f"missing placeholder: {placeholder}"
         template = template.replace(placeholder, value)
 
+    # mqtt.js is inlined as-is (not base64) so the page stays self-contained
+    mqtt_js = (ASSETS / "mqtt.min.js").read_text(encoding="utf-8")
+    assert "</script" not in mqtt_js, "mqtt.js would close the script tag"
+    assert "__MQTT_JS__" in template, "missing placeholder: __MQTT_JS__"
+    template = template.replace("__MQTT_JS__", mqtt_js)
+
     DIST.mkdir(exist_ok=True)
     (DIST / "eatsolo_app_final.html").write_text(template, encoding="utf-8")
 
