@@ -1778,16 +1778,20 @@ async function esPullProfileFromAccount(){
 /* Ce téléphone a-t-il servi à un autre compte ? Alors on repart propre
    plutôt que de prêter le profil du précédent au nouvel arrivant. */
 function esClaimProfileOwner(uid){
-  if(!uid) return;
-  let prev = null;
-  try{ prev = localStorage.getItem(ES_PROFILE_OWNER_KEY); }catch(e){}
-  if(prev && prev !== uid){
-    try{
-      [ES_PROFILE_KEY, ES_MY_PLAN_KEY, 'es_photo', 'es_live_name', 'es_live_named']
-        .forEach(k => localStorage.removeItem(k));
-    }catch(e){}
-  }
+  if(!uid) return false;
+  let prev = null, oldId = null;
+  try{
+    prev = localStorage.getItem(ES_PROFILE_OWNER_KEY);
+    oldId = localStorage.getItem('es_live_id');
+  }catch(e){}
   try{ localStorage.setItem(ES_PROFILE_OWNER_KEY, uid); }catch(e){}
+  if(!prev || prev === uid) return false;
+  esRetireIdentity(oldId);
+  try{
+    [ES_PROFILE_KEY, ES_MY_PLAN_KEY, 'es_photo', 'es_live_id', 'es_live_name', 'es_live_named']
+      .forEach(k => localStorage.removeItem(k));
+  }catch(e){}
+  return true;   // vider le stockage ne suffit pas : l'appelant recharge la page
 }
 
 /* Change d'identifiant public sans laisser de fantôme : l'ancien id est
@@ -1796,32 +1800,40 @@ function esRetireIdentity(oldId){
   if(!oldId) return;
   if(NET.mode === 'relay' && NET.mqtt){
     try{
-      esPub(esBase()+'/pl/'+oldId, {id:oldId, active:false, ts:Date.now()});
-      esPub(esBase()+'/p/'+oldId, {id:oldId, available:false, ts:Date.now()});
+      // charge VIDE et retenue : le courtier oublie le message. Publier un objet
+      // creux laisserait aux autres appareils un pair sans nom ni photo, qui
+      // ressortirait en « ? » dans leurs messages.
+      NET.mqtt.publish(esBase()+'/p/'+oldId, '', {retain:true, qos:0});
+      NET.mqtt.publish(esBase()+'/pl/'+oldId, '', {retain:true, qos:0});
+      Object.keys(NET.convos).forEach(key => {
+        if(key.indexOf(oldId) !== -1) NET.mqtt.publish(esBase()+'/c/'+key+'/'+oldId, '', {retain:true, qos:0});
+      });
     }catch(e){}
+    delete NET.peers[oldId];
+    delete NET.plansMap[oldId];
   } else if(NET.mode === 'server'){
     fetch('/api/plan/clear', {method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({id: oldId})}).catch(()=>{});
   }
 }
 
-function esAdoptAccountIdentity(){
-  const acc = esAccount();
-  if(!acc || !acc.uid) return;
-  esClaimProfileOwner(acc.uid);
-  let current = null;
-  try{ current = localStorage.getItem('es_live_id'); }catch(e){}
-  if(current === acc.uid){ if(LIVE.me) LIVE.me.id = acc.uid; return; }
-  esRetireIdentity(current);
-  try{ localStorage.setItem('es_live_id', acc.uid); }catch(e){}
-  if(LIVE.me) LIVE.me.id = acc.uid;
-}
-
 /* Compte validé : on enchaîne sur le profil pour les nouveaux, l'app pour les autres. */
 async function afterLogin(){
-  esAdoptAccountIdentity();
-  let prof = esLocalProfile();
-  if(!prof || !prof.name) prof = await esPullProfileFromAccount();
+  const acc = esAccount();
+  if(acc && acc.uid && esClaimProfileOwner(acc.uid)){
+    // ce téléphone servait à un autre compte : l'écran, la photo et le plan du
+    // précédent sont encore à l'image. On repart d'une page propre.
+    try{ sessionStorage.setItem('es_resume_login', '1'); }catch(e){}
+    setTimeout(()=>location.reload(), 250);
+    return;
+  }
+  // Le compte fait foi : ce qui a été enregistré depuis un autre téléphone
+  // redescend ici au lieu d'être écrasé par la version restée en local.
+  let prof = await esPullProfileFromAccount();
+  if(!prof || !prof.name){
+    prof = esLocalProfile();
+    if(prof && prof.name) esPushProfileToAccount();   // premier appareil : on remonte
+  }
   if(prof && prof.name){
     esRestoreProfileUI();
     esSaveName(prof.name);
@@ -2098,15 +2110,8 @@ function showScreen(name){
 const LIVE = { on:false, me:null, threadTimer:null };
 
 function esLoadIdentity(){
-  const acc = esAccount();
-  const uid = (acc && acc.verified && acc.uid) ? acc.uid : '';
   let id = localStorage.getItem('es_live_id');
   let name = localStorage.getItem('es_live_name');
-  if(uid){
-    esClaimProfileOwner(uid);
-    if(id !== uid){ esRetireIdentity(id); id = uid; localStorage.setItem('es_live_id', id); }
-    name = localStorage.getItem('es_live_name');
-  }
   if(!id){
     id = (crypto.randomUUID ? crypto.randomUUID() : 'u-' + Math.random().toString(36).slice(2));
     localStorage.setItem('es_live_id', id);
@@ -2152,10 +2157,18 @@ function esSaveSide(key, who, payload){
 }
 
 function esOnRelayMessage(topic, payload){
-  let data;
-  try{ data = JSON.parse(payload.toString()); }catch(e){ return; }
   const parts = topic.split('/');           // eatsolo / v1 / <room> / <kind> / ...
   const kind = parts[3];
+  const raw = payload ? payload.toString() : '';
+  if(!raw){
+    // rétention effacée : l'émetteur s'est retiré, on oublie tout de lui
+    if(kind === 'p' && parts[4]) delete NET.peers[parts[4]];
+    else if(kind === 'pl' && parts[4]) delete NET.plansMap[parts[4]];
+    else if(kind === 'c' && parts[4] && parts[5] && NET.convos[parts[4]]) delete NET.convos[parts[4]][parts[5]];
+    return;
+  }
+  let data;
+  try{ data = JSON.parse(raw); }catch(e){ return; }
   if(kind === 'p' && parts[4]) NET.peers[parts[4]] = data;
   else if(kind === 'pl' && parts[4]) NET.plansMap[parts[4]] = data;
   else if(kind === 'c' && parts[4] && parts[5]){
@@ -2405,8 +2418,7 @@ function esSaveLocalProfile(){
   return prof;
 }
 function esSetChips(groupId, values){
-  if(!values || !values.length) return;
-  const wanted = values.map(v=>v.toLowerCase());
+  const wanted = (values || []).map(v=>String(v).toLowerCase());
   document.querySelectorAll('#'+groupId+' .chip').forEach(c=>{
     c.classList.toggle('active', wanted.indexOf(c.textContent.trim().toLowerCase()) !== -1);
   });
@@ -2421,9 +2433,9 @@ function esApplyOwnPhoto(url){
 function esRestoreProfileUI(){
   const p = esLocalProfile();
   if(!p || !Object.keys(p).length) return;
-  const set = (id, v) => { const el = document.getElementById(id); if(el && v) el.value = v; };
+  const set = (id, v) => { const el = document.getElementById(id); if(el) el.value = v || ''; };
   set('fPrenom', p.name); set('fAge', p.age); set('fJob', p.job); set('fBio', p.bio);
-  if(p.gender) esSetChips('genderGroup', [p.gender]);
+  esSetChips('genderGroup', p.gender ? [p.gender] : []);
   esSetChips('cuisineGroup', p.cuisines);
   esSetChips('hobbyGroup', p.hobbies);
   esApplyOwnPhoto(p.photo);
@@ -2748,6 +2760,12 @@ esRestoreProfileUI();
 renderMyPlan();
 esRestorePlanForm();
 initLiveMode();
+try{
+  if(sessionStorage.getItem('es_resume_login')){
+    sessionStorage.removeItem('es_resume_login');
+    if(isLoggedIn()) afterLogin();
+  }
+}catch(e){}
 </script>
 
 </body>
