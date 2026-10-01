@@ -378,6 +378,16 @@
   .venue-meta{ font-size:12px; color:var(--muted); margin-top:2px; font-weight:600; }
   .venue-swap{ font-size:12px; color:var(--pink-soft); font-weight:700; cursor:pointer; margin-top:10px; display:inline-block; }
   .time-row{ display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
+  .venue-suggest{
+    margin-top:8px; border:1px solid var(--line); border-radius:14px; overflow:hidden;
+    background:var(--surface-2); display:none;
+  }
+  .venue-suggest.open{ display:block; }
+  .venue-opt{ padding:10px 13px; cursor:pointer; border-bottom:1px solid var(--line); }
+  .venue-opt:last-child{ border-bottom:none; }
+  .venue-opt:active{ background:var(--surface-3); }
+  .venue-opt b{ display:block; font-size:13.5px; font-weight:600; color:var(--white); }
+  .venue-opt span{ font-size:11.5px; color:var(--muted); line-height:1.4; }
   .gmaps-embed{ width:100%; height:170px; border:0; border-radius:16px; margin-top:10px; display:block; background:var(--surface-3); }
   .filter-row{ display:flex; gap:8px; margin:0 20px 12px; }
   .filter-row .field-input{ flex:1; padding:9px 12px; font-size:13px; }
@@ -652,7 +662,8 @@
         </div>
         <div class="field-group">
           <span class="field-label">Restaurant (optionnel)</span>
-          <input class="field-input" id="planRestaurant" placeholder="Nom d'un restaurant, si tu en as d&eacute;j&agrave; un en t&ecirc;te" oninput="refreshPlanMap()">
+          <input class="field-input" id="planRestaurant" placeholder="Tape 3 lettres : les vrais restaurants du quartier s'affichent" autocomplete="off" oninput="refreshPlanMap()">
+          <div class="venue-suggest" id="planVenueSuggest"></div>
           <iframe class="gmaps-embed" id="planMapsEmbed" src="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
           <a class="venue-swap" id="planMapsLink" href="#" target="_blank" rel="noopener" style="margin-top:10px;" onclick="return prepPlanMapsLink(this);">&#128269; Ouvrir en plein &eacute;cran sur Google Maps</a>
         </div>
@@ -797,7 +808,8 @@
         <div class="sheet-meta" id="confirmWith">avec --</div>
         <div class="sheet-section" style="margin-top:16px;">
           <h4>Lieu propos&eacute;</h4>
-          <input class="field-input" id="venueName" placeholder="Nom du restaurant (ou laisse vide pour explorer)" oninput="refreshConfirmMap()">
+          <input class="field-input" id="venueName" placeholder="Tape 3 lettres : les vrais restaurants du quartier s'affichent" autocomplete="off" oninput="refreshConfirmMap()">
+          <div class="venue-suggest" id="confirmVenueSuggest"></div>
           <iframe class="gmaps-embed" id="confirmMapsEmbed" src="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
           <a class="venue-swap" id="confirmMapsLink" href="#" target="_blank" rel="noopener" style="margin-top:10px;" onclick="return prepConfirmMapsLink(this);">&#128269; Ouvrir en plein &eacute;cran sur Google Maps</a>
         </div>
@@ -1889,8 +1901,86 @@ function getActiveChipKey(groupId){
   const el = document.querySelector('#'+groupId+' .chip.active');
   return el ? el.getAttribute('data-i') : 'diner';
 }
+/* ===================== VRAIS ETABLISSEMENTS (Google Places) =====================
+   La clé est publique par nature (elle part dans la page) : c'est sa restriction
+   par domaine, côté Google, qui empêche qu'on s'en serve ailleurs. */
+const ES_MAPS_KEY = 'AIzaSyCbRHMsIMYx7zRJ9s8ge9Q3hhn7i8_LgPA';
+
+function esEsc(str){
+  return String(str == null ? '' : str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+async function esPlacesSearch(text, near){
+  if(!ES_MAPS_KEY || text.trim().length < 3) return [];
+  try{
+    const r = await fetch('https://places.googleapis.com/v1/places:searchText', {
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'X-Goog-Api-Key': ES_MAPS_KEY,
+        'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.primaryTypeDisplayName,places.rating',
+      },
+      body: JSON.stringify({
+        textQuery: (text.trim() + (near ? ' ' + near : '')).trim(),
+        languageCode: 'fr',
+        maxResultCount: 6,
+      }),
+    });
+    if(!r.ok) return [];
+    const d = await r.json();
+    return d.places || [];
+  }catch(e){ return []; }
+}
+
+/* Branche un champ texte sur Places : on cherche autour de la ville et du
+   quartier déjà saisis, et choisir une proposition fige l'adresse exacte. */
+function esBindVenueSearch(inputId, suggestId, nearFn, afterPick){
+  const input = document.getElementById(inputId);
+  const box = document.getElementById(suggestId);
+  if(!input || !box) return;
+  const close = () => { box.classList.remove('open'); box.innerHTML = ''; };
+  let timer = null;
+  input.addEventListener('input', () => {
+    input.removeAttribute('data-place-id');
+    input.removeAttribute('data-address');
+    clearTimeout(timer);
+    const q = input.value.trim();
+    if(q.length < 3){ close(); return; }
+    timer = setTimeout(async () => {
+      const places = await esPlacesSearch(q, nearFn());
+      if(!places.length || input.value.trim().length < 3){ close(); return; }
+      box.innerHTML = places.map((pl, i) => {
+        const nom = (pl.displayName && pl.displayName.text) || '';
+        const type = (pl.primaryTypeDisplayName && pl.primaryTypeDisplayName.text) || '';
+        const note = pl.rating ? ' \u00b7 \u2605 ' + pl.rating : '';
+        const meta = [type, pl.formattedAddress || ''].filter(Boolean).join(' \u00b7 ');
+        return '<div class="venue-opt" data-i="' + i + '"><b>' + esEsc(nom) + '</b>' +
+               '<span>' + esEsc(meta) + note + '</span></div>';
+      }).join('');
+      box.classList.add('open');
+      Array.from(box.querySelectorAll('.venue-opt')).forEach(el => {
+        el.onclick = () => {
+          const pl = places[parseInt(el.getAttribute('data-i'), 10)];
+          input.value = (pl.displayName && pl.displayName.text) || input.value;
+          input.setAttribute('data-place-id', pl.id || '');
+          input.setAttribute('data-address', pl.formattedAddress || '');
+          close();
+          if(afterPick) afterPick(pl);
+        };
+      });
+    }, 350);
+  });
+  input.addEventListener('blur', () => setTimeout(close, 180));
+}
+
 function buildMapsQuery(mealKey, city, area, venue){
-  if(venue && venue.trim()) return venue.trim() + ' ' + city;
+  // une adresse complète choisie dans la liste se suffit : y recoller la ville
+  // ne ferait que brouiller la recherche
+  if(venue && venue.trim()){
+    const v = venue.trim();
+    return v.indexOf(',') !== -1 ? v : v + ' ' + city;
+  }
   return 'restaurant ' + (MEAL_WORD[mealKey] || 'dîner') + ' ' + (area ? area + ' ' : '') + city;
 }
 function buildMapsUrl(mealKey, city, area, venue){
@@ -1899,12 +1989,19 @@ function buildMapsUrl(mealKey, city, area, venue){
 function buildMapsEmbedUrl(mealKey, city, area, venue){
   return 'https://www.google.com/maps?q=' + encodeURIComponent(buildMapsQuery(mealKey, city, area, venue).trim()) + '&output=embed';
 }
+function esPickedVenue(inputId){
+  const el = document.getElementById(inputId);
+  if(!el) return '';
+  const addr = el.getAttribute('data-address');
+  const name = el.value.trim();
+  return addr ? (name + ', ' + addr) : name;
+}
 function refreshPlanMap(){
   const city = document.getElementById('locCity').value.trim() || 'Lyon';
   const area = document.getElementById('locArea').value.trim();
   const mealKey = getActiveChipKey('planMealGroup');
-  const venue = document.getElementById('planRestaurant').value.trim();
-  document.getElementById('planMapsEmbed').src = buildMapsEmbedUrl(mealKey, city, area, venue);
+  document.getElementById('planMapsEmbed').src =
+    buildMapsEmbedUrl(mealKey, city, area, esPickedVenue('planRestaurant'));
 }
 function refreshConfirmMap(){
   const city = document.getElementById('locCity') ? (document.getElementById('locCity').value.trim() || 'Lyon') : 'Lyon';
@@ -1952,7 +2049,12 @@ function esRestorePlanForm(){
     if(plan.minPeople) document.getElementById('planMin').value = plan.minPeople;
     if(plan.maxPeople) document.getElementById('planMax').value = plan.maxPeople;
     if(plan.pitch) document.getElementById('planPitch').value = plan.pitch;
-    if(plan.restaurant) document.getElementById('planRestaurant').value = plan.restaurant;
+    if(plan.restaurant){
+      const rest = document.getElementById('planRestaurant');
+      rest.value = plan.restaurant;
+      if(plan.restaurantAddress) rest.setAttribute('data-address', plan.restaurantAddress);
+      if(plan.placeId) rest.setAttribute('data-place-id', plan.placeId);
+    }
     if(plan.city) document.getElementById('locCity').value = plan.city;
     if(plan.area) document.getElementById('locArea').value = plan.area;
   } else if(!dateEl.value){
@@ -2051,7 +2153,10 @@ function applyLocation(){
   const short = area ? city + ' · ' + area.replace(' arrondissement','e') : city;
   document.getElementById('cityPillText').textContent = short;
 
-  const plan = {city, area, when, slot, date, timeFrom, timeTo, minPeople, maxPeople, pitch, mealType: mealKey, restaurant};
+  const restaurantAddress = document.getElementById('planRestaurant').getAttribute('data-address') || '';
+  const placeId = document.getElementById('planRestaurant').getAttribute('data-place-id') || '';
+  const plan = {city, area, when, slot, date, timeFrom, timeTo, minPeople, maxPeople, pitch,
+                mealType: mealKey, restaurant, restaurantAddress, placeId};
   esSaveMyPlan(plan);
   if(LIVE.on){
     esApi('/api/plan', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(
@@ -2518,7 +2623,8 @@ async function esPollPlans(){
       plans.push({
         name:p.name, mealType:p.mealType, when:p.when, slot:p.slot, date:p.date,
         minPeople:p.minPeople, maxPeople:p.maxPeople, pitch:p.pitch,
-        city:p.city, area:p.area, restaurant:p.restaurant, liveId:p.id,
+        city:p.city, area:p.area, restaurant:p.restaurant,
+        restaurantAddress:p.restaurantAddress, liveId:p.id,
         profile:p.profile,
       });
     });
@@ -2756,6 +2862,17 @@ async function initLiveMode(){
   esPollPlans();
   setInterval(esPollPlans, 4000);
 }
+esBindVenueSearch('planRestaurant', 'planVenueSuggest',
+  () => [document.getElementById('locArea').value.trim(),
+         document.getElementById('locCity').value.trim()].filter(Boolean).join(' '),
+  () => refreshPlanMap());
+esBindVenueSearch('venueName', 'confirmVenueSuggest',
+  () => {
+    const c = document.getElementById('locCity'), a = document.getElementById('locArea');
+    return [a ? a.value.trim() : '', c ? c.value.trim() : ''].filter(Boolean).join(' ');
+  },
+  () => refreshConfirmMap());
+
 esRestoreProfileUI();
 renderMyPlan();
 esRestorePlanForm();

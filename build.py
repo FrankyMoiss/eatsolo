@@ -29,6 +29,10 @@ def main():
         assert placeholder in template, f"missing placeholder: {placeholder}"
         template = template.replace(placeholder, value)
 
+    maps_key = (ASSETS / "maps_key.txt").read_text(encoding="utf-8").strip()
+    assert "__GOOGLE_MAPS_KEY__" in template, "missing placeholder: __GOOGLE_MAPS_KEY__"
+    template = template.replace("__GOOGLE_MAPS_KEY__", maps_key)
+
     # mqtt.js is inlined as-is (not base64) so the page stays self-contained
     mqtt_js = (ASSETS / "mqtt.min.js").read_text(encoding="utf-8")
     assert "</script" not in mqtt_js, "mqtt.js would close the script tag"

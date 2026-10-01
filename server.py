@@ -251,6 +251,8 @@ class Handler(BaseHTTPRequestHandler):
                     "pitch": (data.get("pitch") or "")[:300],
                     "mealType": (data.get("mealType") or "diner")[:20],
                     "restaurant": (data.get("restaurant") or "")[:120],
+                    "restaurantAddress": (data.get("restaurantAddress") or "")[:200],
+                    "placeId": (data.get("placeId") or "")[:120],
                     "active": True,
                     "updatedAt": time.time(),
                 }
