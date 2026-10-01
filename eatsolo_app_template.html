@@ -1560,6 +1560,15 @@ async function supabaseSignup(email, password){
     const data = await r.json();
     if(!r.ok) return authFail(data.msg || data.error_description || "La création du compte a échoué.");
     pendingPassword = password;
+    // Si le projet ne réclame pas de confirmation, l'inscription renvoie
+    // directement une session : inutile de passer par l'écran de vérification.
+    const session = data.access_token || (data.session && data.session.access_token);
+    if(session){
+      esSaveAccount({email, verified:true, token:session});
+      closeAuth();
+      afterLogin();
+      return;
+    }
     esSaveAccount({email, verified:false});
     closeAuth();
     startVerify(email);
