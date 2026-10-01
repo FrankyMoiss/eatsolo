@@ -574,6 +574,12 @@
     <div class="screen" id="screen-planifier" style="display:none;">
       <div class="topbar"><div class="brand-text">Planifier</div></div>
 
+      <div class="view-switch">
+        <div class="view-btn" id="planTabCreate" onclick="setPlanTab('create')">&#9998; Proposer</div>
+        <div class="view-btn active" id="planTabBrowse" onclick="setPlanTab('browse')">&#127869;&#65039; Tables ouvertes</div>
+      </div>
+
+      <div id="planCreateView" style="display:none;">
       <div class="avail-card" style="margin:6px 20px 18px;">
         <div class="avail-label">Nouveau plan</div>
         <div class="sheet-meta" style="font-weight:500; line-height:1.5; margin-top:8px;">Ind&eacute;pendant de ton statut "dispo maintenant" &mdash; ce plan reste visible m&ecirc;me si tu coupes le direct.</div>
@@ -601,16 +607,14 @@
             <input class="field-input" type="time" id="planTimeTo" value="21:30">
           </div>
         </div>
-        <div class="field-group" style="display:flex; gap:14px;">
-          <div style="flex:1;">
-            <span class="field-label">Minimum</span>
-            <select class="field-input" id="planMin">
+        <div class="field-group">
+          <span class="field-label">Nombre de personnes</span>
+          <div style="display:flex; gap:12px; align-items:center;">
+            <select class="field-input" id="planMin" style="flex:1;">
               <option>2</option><option>3</option><option>4</option><option>5</option><option>6</option>
             </select>
-          </div>
-          <div style="flex:1;">
-            <span class="field-label">Maximum</span>
-            <select class="field-input" id="planMax">
+            <span style="color:var(--muted); font-size:13px;">&agrave;</span>
+            <select class="field-input" id="planMax" style="flex:1;">
               <option>2</option><option selected>4</option><option>5</option><option>6</option><option>8</option>
             </select>
           </div>
@@ -642,14 +646,16 @@
         </div>
       </div>
 
-      <div id="myPlanBox"></div>
-
-      <div class="section-label"><span>&#128197; Plans &agrave; venir</span></div>
-      <div class="filter-row">
-        <input class="field-input" id="planFilterCity" placeholder="Filtrer par ville..." oninput="renderPlans()">
-        <input class="field-input" type="date" id="planFilterDate" onchange="renderPlans()" title="Filtrer par date">
       </div>
-      <div class="people" id="plansList"></div>
+
+      <div id="planBrowseView">
+        <div id="myPlanBox"></div>
+        <div class="filter-row">
+          <input class="field-input" id="planFilterCity" placeholder="Filtrer par ville..." oninput="renderPlans()">
+          <input class="field-input" type="date" id="planFilterDate" onchange="renderPlans()" title="Filtrer par date">
+        </div>
+        <div class="people" id="plansList"></div>
+      </div>
       <div style="height:14px"></div>
     </div>
 
@@ -1801,6 +1807,18 @@ function esSaveMyPlan(plan){
     else localStorage.removeItem(ES_MY_PLAN_KEY);
   }catch(e){}
 }
+let planTab = 'browse';
+function setPlanTab(tab){
+  planTab = tab;
+  const creating = tab === 'create';
+  document.getElementById('planCreateView').style.display = creating ? 'block' : 'none';
+  document.getElementById('planBrowseView').style.display = creating ? 'none' : 'block';
+  document.getElementById('planTabCreate').classList.toggle('active', creating);
+  document.getElementById('planTabBrowse').classList.toggle('active', !creating);
+  if(creating){ refreshPlanMap(); esRestorePlanForm(); }
+  else { renderPlans(); renderMyPlan(); }
+}
+
 function renderMyPlan(){
   const box = document.getElementById('myPlanBox');
   if(!box) return;
@@ -1832,8 +1850,8 @@ function renderPlans(){
 
   if(!filtered.length){
     el.innerHTML = plans.length
-      ? `<div class="empty" style="padding:26px 20px;"><h3>Aucun plan ne correspond</h3><p>Essaie une autre ville ou une autre date.</p></div>`
-      : `<div class="empty" style="padding:26px 20px;"><h3>Aucun plan partagé</h3><p>Planifie un dîner à l'avance depuis la pastille ville en haut de l'écran.</p></div>`;
+      ? `<div class="empty" style="padding:26px 20px;"><h3>Aucune table ne correspond</h3><p>Essaie une autre ville ou une autre date.</p></div>`
+      : `<div class="empty" style="padding:26px 20px;"><h3>Aucune table ouverte</h3><p>Personne n'a encore proposé de repas. Ouvre la tienne depuis l'onglet « Proposer ».</p></div>`;
     return;
   }
   el.innerHTML = filtered.map(p=>{
@@ -1877,7 +1895,7 @@ function applyLocation(){
       Object.assign({id: LIVE.me.id, name: LIVE.me.name}, plan)
     )}).catch(()=>{});
   }
-  renderMyPlan();
+  setPlanTab('browse');
   showToast('Plan enregistré — ' + when.toLowerCase() + ', ' + slot);
 }
 function clearPlan(){
@@ -1920,7 +1938,7 @@ function showScreen(name){
     document.getElementById('nav-'+s).classList.toggle('active', s===name);
   });
   closeSheet();
-  if(name === 'planifier'){ refreshPlanMap(); renderPlans(); renderMyPlan(); esRestorePlanForm(); }
+  if(name === 'planifier'){ setPlanTab(planTab); }
 }
 
 /* ===================== MODE DIRECT (deux appareils, test réel) =====================
