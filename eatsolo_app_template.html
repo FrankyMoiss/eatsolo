@@ -558,7 +558,7 @@
         <div class="view-btn" id="viewBtnMap" onclick="setView('map')">&#128506; Carte</div>
       </div>
 
-      <div class="section-label"><span id="radarStatusLabel">Dispo pr&egrave;s de vous &middot; maintenant</span><span id="countLabel">6</span></div>
+      <div class="section-label"><span id="radarStatusLabel">Dispo pr&egrave;s de vous &middot; maintenant</span><span id="countLabel">0</span></div>
 
       <div class="people" id="peopleList"></div>
       <div class="map-wrap" id="mapView" style="display:none;">
@@ -976,27 +976,9 @@
 
 <script>__MQTT_JS__</script>
 <script>
-const people = [
-  {name:"Camille", job:"Cheffe de projet événementiel", gender:"Femme", cuisines:["Italien","Végé"], hobbies:["Théâtre","Voyage"], verified:true, age:29, dist:"120 m", init:"C", color:"linear-gradient(135deg,var(--pink),var(--pink-deep))", bio:"En déplacement pour 2 jours, je bosse dans l'événementiel. Envie d'un bon italien ce soir plutôt que room service.", tags:["Dîner · 20h","Italien","Discussion"], time:"maintenant", venue:{icon:"🍝", name:"Trattoria Basilico", meta:"Italien · 4 min à pied"}, pos:{top:"30%", left:"38%"}},
-  {name:"Nassim", job:"Commercial grands comptes", gender:"Homme", cuisines:["Japonais","Street food"], hobbies:["Sport","Musique"], verified:true, age:34, dist:"280 m", init:"N", color:"linear-gradient(135deg,var(--pink-soft),var(--pink-deep))", bio:"Commercial en tournée, de passage à Lyon jusqu'à demain. Partant pour un dîner tranquille, pas de blabla business.", tags:["Dîner · 19h30","Japonais"], time:"maintenant", venue:{icon:"🍣", name:"Kyoto Izakaya", meta:"Japonais · 6 min à pied"}, pos:{top:"58%", left:"66%"}},
-  {name:"Elena", job:"Ingénieure logiciel", gender:"Femme", cuisines:["Lyonnais","Italien"], hobbies:["Randonnée","Cinéma"], verified:true, age:26, dist:"450 m", init:"E", color:"linear-gradient(225deg,var(--pink-deep),var(--pink))", bio:"Arrivée hier à Lyon pour un nouveau job, je ne connais encore personne. Envie de découvrir un bouchon lyonnais.", tags:["Dîner · 20h30","Local","Nouvel arrivant"], time:"maintenant", venue:{icon:"🍷", name:"Le Bouchon des Cordeliers", meta:"Lyonnais · 8 min à pied"}, pos:{top:"22%", left:"70%"}},
-  {name:"Thomas", job:"Consultant indépendant", gender:"Homme", cuisines:["Œnologie","Français"], hobbies:["Vin","Golf"], verified:true, age:41, dist:"600 m", init:"T", color:"linear-gradient(45deg,var(--pink),var(--pink-deep))", bio:"De passage pour un salon pro. Amateur de bons vins, ouvert à toute discussion autour d'une table.", tags:["Verre · 19h","Œnologie"], time:"il y a 4 min", venue:{icon:"🍷", name:"Le Bar à Vins de Bellecour", meta:"Bar à vins · 9 min à pied"}, pos:{top:"72%", left:"28%"}},
-  {name:"Sofia", job:"Architecte", gender:"Femme", cuisines:["Méditerranéen","Végé"], hobbies:["Réseau pro","Design"], verified:true, age:31, dist:"750 m", init:"S", color:"linear-gradient(225deg,var(--pink-soft),var(--pink-deep))", bio:"Expatriée depuis 3 mois, je cherche à élargir mon réseau. Toujours partante pour un dîner convivial.", tags:["Dîner · 20h","Réseau"], time:"il y a 6 min", venue:{icon:"🍽️", name:"Le Comptoir d'Antoine", meta:"Bistrot · 11 min à pied"}, pos:{top:"14%", left:"48%"}},
-  {name:"Julien", job:"Photographe freelance", gender:"Homme", cuisines:["Asiatique","Street food"], hobbies:["Photo","Voyage"], verified:true, age:37, dist:"900 m", init:"J", color:"linear-gradient(45deg,var(--pink-deep),var(--pink-soft))", bio:"Photographe freelance en repérage dans le coin. Pas fan de manger seul avec son téléphone.", tags:["Dîner · 21h","Photo"], time:"il y a 9 min", venue:{icon:"🍜", name:"Nam Nam Street Food", meta:"Asiatique · 13 min à pied"}, pos:{top:"80%", left:"58%"}},
-];
+const people = [];
 
-const conversations = {
-  Elena:{status:"accepted", preview:"Super, on se retrouve au Comptoir à 20h30 ?", time:"2 min", unread:true, log:[
-    {who:"them", text:"Salut ! Avec plaisir pour ce soir 😊"},
-    {who:"me", text:"Nickel, ça te dit un bouchon lyonnais ?"},
-    {who:"them", text:"Super, on se retrouve au Comptoir à 20h30 ?"},
-  ]},
-  Nassim:{status:"pending", preview:"", time:"maintenant", unread:true, log:[]},
-  Sofia:{status:"accepted", preview:"Merci pour hier soir, c'était top !", time:"1 j", unread:false, log:[
-    {who:"them", text:"Merci pour hier soir, c'était top !"},
-    {who:"me", text:"Avec plaisir, on remet ça bientôt !"},
-  ]},
-};
+const conversations = {};
 
 const times = ["19h00","19h30","20h00","20h30","21h00"];
 let selectedTime = "20h00";
@@ -1014,7 +996,7 @@ function render(){
   document.getElementById('mapCount').textContent = people.length + ' dispo';
 
   if(people.length === 0){
-    peopleList.innerHTML = `<div class="empty"><h3>Personne d'autre pour l'instant</h3><p>Ouvre ce m&ecirc;me lien sur un autre appareil connect&eacute; au m&ecirc;me wifi pour le voir appara&icirc;tre ici.</p></div>`;
+    peopleList.innerHTML = `<div class="empty"><h3>Personne d'autre pour l'instant</h3><p>Ouvre ce m&ecirc;me lien sur un autre t&eacute;l&eacute;phone, mets-toi dispo, et la personne appara&icirc;t ici.</p></div>`;
     mapPinsEl.innerHTML = '';
     return;
   }
@@ -1860,14 +1842,7 @@ function saveProfile(){
 const MEAL_EMOJI = {cafe:'☕', dej:'🥗', diner:'🍜', verre:'🍸'};
 const MEAL_WORD = {cafe:'café', dej:'déjeuner', diner:'dîner', verre:'verre'};
 
-const plans = [
-  {name:'Marc', mealType:'diner', when:'Demain soir', slot:'19h – 21h', city:'Lyon', area:'6e arrondissement', restaurant:'',
-   job:'Kinésithérapeute', bio:"De passage deux jours pour une formation, je préfère dîner accompagné que devant la télé de l'hôtel.",
-   cuisines:['Lyonnais','Italien'], hobbies:['Course à pied','Cinéma']},
-  {name:'Aline', mealType:'cafe', when:'Ce week-end', slot:'12h – 14h', city:'Lyon', area:'Presqu’île', restaurant:'Le Sucre',
-   job:'Traductrice', bio:"Nouvelle à Lyon, j'aimerais rencontrer des gens autour d'un café le week-end.",
-   cuisines:['Brunch','Végé'], hobbies:['Lecture','Expos']},
-];
+const plans = [];
 
 function getActiveChip(groupId){
   const el = document.querySelector('#'+groupId+' .chip.active');
