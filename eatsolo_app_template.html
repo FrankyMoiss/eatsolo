@@ -841,13 +841,16 @@
         <div class="editor-title">V&eacute;rifie ton adresse</div>
       </div>
       <div class="editor-body">
-        <p class="settings-intro">Nous venons d'envoyer un email &agrave; <b id="verifyEmail">—</b>. Clique le lien qu'il contient, ou saisis le code &agrave; 6 chiffres ci-dessous.</p>
-        <div class="field-group">
-          <span class="field-label">Code de v&eacute;rification</span>
-          <input class="field-input" id="verifyCode" inputmode="numeric" maxlength="6" placeholder="6 chiffres">
+        <p class="settings-intro">Nous venons d'envoyer un email &agrave; <b id="verifyEmail">—</b>. Clique le lien qu'il contient, puis reviens ici.</p>
+        <button class="save-btn" onclick="confirmLinkClicked()">J'ai cliqu&eacute; le lien, continuer</button>
+        <div class="settings-section">
+          <h4>Ou saisis le code re&ccedil;u</h4>
+          <div class="field-group">
+            <input class="field-input" id="verifyCode" inputmode="numeric" maxlength="6" placeholder="6 chiffres">
+          </div>
+          <button class="save-btn" onclick="submitVerify()">Valider le code</button>
         </div>
         <div class="auth-error" id="verifyError"></div>
-        <button class="save-btn" onclick="submitVerify()">Valider mon adresse</button>
         <div class="auth-switch" onclick="resendVerify()">Je n'ai rien re&ccedil;u — renvoyer l'email</div>
       </div>
     </div>
@@ -1466,11 +1469,12 @@ function sendReport(){
    - Sinon, mode local : le compte reste sur l'appareil et le code de
      vérification s'affiche à l'écran, pour pouvoir tester le parcours
      complet sans dépendre d'un service.                                  */
-const SUPABASE_URL = '';   // à remplir après création du projet Supabase
-const SUPABASE_KEY = '';   // clé "anon public", prévue pour être publique
+const SUPABASE_URL = 'https://gifdphdieioqzkjtexgz.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_R5-hGDKu87zAgZ-63BEsDw_m7E2pgk7';  // clé publiable, prévue pour vivre dans le navigateur
 
 const AUTH_KEY = 'es_account_v1';
 let authMode = 'signup';
+let pendingPassword = '';   // gardé en mémoire seulement, jamais écrit sur le disque
 
 function authBackend(){ return (SUPABASE_URL && SUPABASE_KEY) ? 'supabase' : 'local'; }
 function esAccount(){
@@ -1555,6 +1559,7 @@ async function supabaseSignup(email, password){
     });
     const data = await r.json();
     if(!r.ok) return authFail(data.msg || data.error_description || "La création du compte a échoué.");
+    pendingPassword = password;
     esSaveAccount({email, verified:false});
     closeAuth();
     startVerify(email);
@@ -1614,6 +1619,29 @@ async function submitVerify(){
   esSaveAccount(Object.assign({}, acc, {verified:true}));
   closeVerify();
   afterLogin();
+}
+
+/* Après le clic sur le lien, le compte est confirmé côté Supabase :
+   une simple connexion suffit à le constater. */
+async function confirmLinkClicked(){
+  const acc = esAccount();
+  const fail = m => { document.getElementById('verifyError').textContent = m; };
+  if(!acc) return fail('Recommence l\'inscription.');
+  if(authBackend() === 'local'){ return fail('Saisis le code affiché à l\'écran.'); }
+  const pass = pendingPassword || acc.pass || '';
+  if(!pass) return fail('Reconnecte-toi avec ton email et ton mot de passe.');
+  try{
+    const r = await fetch(SUPABASE_URL + '/auth/v1/token?grant_type=password', {
+      method:'POST',
+      headers:{'Content-Type':'application/json', apikey: SUPABASE_KEY},
+      body: JSON.stringify({email: acc.email, password: pass}),
+    });
+    const data = await r.json();
+    if(!r.ok) return fail("L'adresse n'est pas encore validée. Ouvre l'email et clique le lien.");
+    esSaveAccount(Object.assign({}, acc, {verified:true, token:data.access_token}));
+    closeVerify();
+    afterLogin();
+  }catch(e){ fail('Connexion impossible.'); }
 }
 
 function resendVerify(){
