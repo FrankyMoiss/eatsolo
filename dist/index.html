@@ -146,13 +146,8 @@
     padding:0 26px; font-size:13px; font-weight:600; color:var(--white); letter-spacing:0.2px;
     font-variant-numeric:tabular-nums; position:relative; z-index:70;
   }
-  .live-badge{
-    position:absolute; left:14px; bottom:92px; z-index:65; font-size:10.5px; font-weight:700; color:var(--success);
-    background:color-mix(in srgb, var(--bg) 85%, transparent); border:1px solid var(--line); padding:5px 10px 5px 8px;
-    border-radius:100px; display:none; align-items:center; gap:5px; font-family:var(--body);
-  }
-  .live-badge.show{ display:flex; }
-  .live-dot{ width:6px; height:6px; border-radius:50%; background:var(--success); box-shadow:0 0 6px var(--success); flex:none; }
+  #statusRight{ display:inline-flex; align-items:center; gap:6px; color:var(--success); }
+  .live-dot{ width:6px; height:6px; border-radius:50%; background:var(--success); box-shadow:0 0 6px var(--success); flex:none; display:inline-block; }
 
   .screen{ flex:1; overflow-y:auto; overflow-x:hidden; position:relative; scrollbar-width:none; }
   .screen::-webkit-scrollbar{ display:none; }
@@ -396,7 +391,7 @@
 
   /* ---------- thread ---------- */
   .thread{
-    position:absolute; inset:0; z-index:70; background:var(--bg); display:flex; flex-direction:column;
+    position:absolute; inset:0; top:46px; z-index:70; background:var(--bg); display:flex; flex-direction:column;
     transform:translateX(100%); transition:.26s cubic-bezier(.2,.8,.2,1);
   }
   .thread.open{ transform:translateX(0); }
@@ -438,7 +433,7 @@
 
   /* ---------- profile editor ---------- */
   .editor{
-    position:absolute; inset:0; z-index:75; background:var(--bg); display:flex; flex-direction:column;
+    position:absolute; inset:0; top:46px; z-index:75; background:var(--bg); display:flex; flex-direction:column;
     transform:translateY(100%); transition:.28s cubic-bezier(.2,.8,.2,1);
   }
   .editor.open{ transform:translateY(0); }
@@ -458,6 +453,18 @@
   .photo-btn{ background:var(--surface-3); border:1px solid var(--line); color:var(--off); font-weight:700; font-size:12.5px; padding:10px 16px; border-radius:100px; cursor:pointer; font-family:var(--body); display:inline-block; }
   .verify-card{ background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:16px; display:flex; gap:12px; align-items:flex-start; }
   .verify-card p{ font-size:12.5px; color:var(--muted); line-height:1.5; margin:4px 0 0; }
+  .my-plan{ margin:0 20px 18px; padding:16px; border-radius:20px; background:color-mix(in srgb, var(--pink) 12%, var(--surface)); border:1px solid var(--pink); }
+  .my-plan-head{ font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--pink-soft); }
+  .my-plan-title{ font-family:var(--display); font-size:17px; font-weight:600; margin-top:6px; }
+  .my-plan-meta{ font-size:12.5px; color:var(--off); margin-top:4px; line-height:1.45; }
+  .my-plan-note{ font-size:11.5px; color:var(--muted); margin-top:10px; }
+  .settings-intro{ font-size:13px; color:var(--muted); line-height:1.55; margin:0 0 18px; }
+  .settings-section{ margin-top:26px; }
+  .settings-section h4{ font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--muted); margin:0 0 8px; }
+  .pref-row{ display:flex; align-items:center; justify-content:space-between; gap:14px; padding:14px 0; border-bottom:1px solid var(--line); }
+  .pref-text{ flex:1; min-width:0; }
+  .pref-label{ font-size:14px; font-weight:600; }
+  .pref-hint{ font-size:12px; color:var(--muted); margin-top:2px; line-height:1.4; }
   .editor-foot{ position:absolute; left:0; right:0; bottom:0; padding:16px 20px 24px; background:linear-gradient(180deg, transparent, var(--bg) 32%); }
   .save-btn{ width:100%; padding:15px; border-radius:16px; border:none; background:var(--pink); color:#fff; font-weight:700; font-size:14.5px; cursor:pointer; box-shadow:0 10px 26px color-mix(in srgb, var(--pink) 35%, transparent); font-family:var(--body); }
   .edit-fab{ position:absolute; bottom:-2px; right:-2px; width:30px; height:30px; border-radius:50%; background:var(--pink); border:3px solid var(--bg); display:flex; align-items:center; justify-content:center; font-size:12px; cursor:pointer; }
@@ -493,10 +500,9 @@
 <div class="stage">
   <div class="phone">
     <div class="notch"></div>
-    <div class="live-badge" id="liveBadge"><span class="live-dot"></span>En direct</div>
     <div class="status">
       <span>9:41</span>
-      <span>&#128246; EatSolo</span>
+      <span id="statusRight">&#128246; EatSolo</span>
     </div>
 
     <!-- ============ SPLASH ============ -->
@@ -595,20 +601,31 @@
           </div>
         </div>
         <div class="field-group">
-          <span class="field-label">Quel jour</span>
-          <div class="chip-group" id="planDayGroup">
-            <div class="chip active" onclick="selectSingle(this,'planDayGroup')">Ce soir</div>
-            <div class="chip" onclick="selectSingle(this,'planDayGroup')">Demain midi</div>
-            <div class="chip" onclick="selectSingle(this,'planDayGroup')">Demain soir</div>
-            <div class="chip" onclick="selectSingle(this,'planDayGroup')">Ce week-end</div>
+          <span class="field-label">Date</span>
+          <input class="field-input" type="date" id="planDate">
+        </div>
+        <div class="field-group" style="display:flex; gap:14px;">
+          <div style="flex:1;">
+            <span class="field-label">De</span>
+            <input class="field-input" type="time" id="planTimeFrom" value="19:30">
+          </div>
+          <div style="flex:1;">
+            <span class="field-label">&Agrave;</span>
+            <input class="field-input" type="time" id="planTimeTo" value="21:30">
           </div>
         </div>
-        <div class="field-group">
-          <span class="field-label">Cr&eacute;neau horaire</span>
-          <div class="chip-group" id="planSlotGroup">
-            <div class="chip" onclick="selectSingle(this,'planSlotGroup')">12h &ndash; 14h</div>
-            <div class="chip active" onclick="selectSingle(this,'planSlotGroup')">19h &ndash; 21h</div>
-            <div class="chip" onclick="selectSingle(this,'planSlotGroup')">21h &ndash; 23h</div>
+        <div class="field-group" style="display:flex; gap:14px;">
+          <div style="flex:1;">
+            <span class="field-label">Minimum</span>
+            <select class="field-input" id="planMin">
+              <option>2</option><option>3</option><option>4</option><option>5</option><option>6</option>
+            </select>
+          </div>
+          <div style="flex:1;">
+            <span class="field-label">Maximum</span>
+            <select class="field-input" id="planMax">
+              <option>2</option><option selected>4</option><option>5</option><option>6</option><option>8</option>
+            </select>
           </div>
         </div>
         <div class="field-group" style="display:flex; gap:14px;">
@@ -627,6 +644,10 @@
           <iframe class="gmaps-embed" id="planMapsEmbed" src="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
           <a class="venue-swap" id="planMapsLink" href="#" target="_blank" rel="noopener" style="margin-top:10px;" onclick="return prepPlanMapsLink(this);">&#128269; Ouvrir en plein &eacute;cran sur Google Maps</a>
         </div>
+        <div class="field-group">
+          <span class="field-label">Ton intention</span>
+          <textarea class="field-textarea" id="planPitch" placeholder="Une phrase pour donner envie : qui tu es, ce que tu cherches ce soir-l&agrave;."></textarea>
+        </div>
 
         <div class="btn-row">
           <button class="btn btn-ghost" onclick="clearPlan()">Effacer mon plan</button>
@@ -634,16 +655,12 @@
         </div>
       </div>
 
+      <div id="myPlanBox"></div>
+
       <div class="section-label"><span>&#128197; Plans &agrave; venir</span></div>
       <div class="filter-row">
         <input class="field-input" id="planFilterCity" placeholder="Filtrer par ville..." oninput="renderPlans()">
-        <select class="field-input" id="planFilterWhen" onchange="renderPlans()">
-          <option value="">Toutes les dates</option>
-          <option>Ce soir</option>
-          <option>Demain midi</option>
-          <option>Demain soir</option>
-          <option>Ce week-end</option>
-        </select>
+        <input class="field-input" type="date" id="planFilterDate" onchange="renderPlans()" title="Filtrer par date">
       </div>
       <div class="people" id="plansList"></div>
       <div style="height:14px"></div>
@@ -668,9 +685,9 @@
         <button class="photo-btn" style="margin-top:14px; border:1px solid var(--pink); color:var(--pink-soft);" onclick="openEditor()">Cr&eacute;er / modifier mon profil</button>
       </div>
       <div class="stat-row">
-        <div class="stat"><b>27</b><span>Repas</span></div>
-        <div class="stat"><b>4.9</b><span>Note</span></div>
+        <div class="stat"><b>27</b><span>Repas partag&eacute;s</span></div>
         <div class="stat"><b>8</b><span>Villes</span></div>
+        <div class="stat"><b id="profileSince">2026</b><span>Membre depuis</span></div>
       </div>
       <div class="premium-banner">
         <div><b>Passer Premium</b><p>Visibilit&eacute; prioritaire + filtres avanc&eacute;s</p></div>
@@ -680,19 +697,23 @@
         <div class="list-left"><div class="icon-box">&#127380;</div>Identit&eacute; v&eacute;rifi&eacute;e</div>
         <span style="color:var(--success); font-size:12px; font-weight:700;">&#10003; Valid&eacute;e</span>
       </div>
-      <div class="list-item">
+      <div class="list-item" onclick="openSettings('cuisine')">
         <div class="list-left"><div class="icon-box">&#127869;&#65039;</div>Pr&eacute;f&eacute;rences culinaires</div>
         <span class="chev">&rsaquo;</span>
       </div>
-      <div class="list-item">
+      <div class="list-item" onclick="openSettings('ambiance')">
+        <div class="list-left"><div class="icon-box">&#127912;</div>Ambiance</div>
+        <span class="chev">&rsaquo;</span>
+      </div>
+      <div class="list-item" onclick="openSettings('notifications')">
         <div class="list-left"><div class="icon-box">&#128276;</div>Notifications de proximit&eacute;</div>
         <span class="chev">&rsaquo;</span>
       </div>
-      <div class="list-item">
+      <div class="list-item" onclick="openSettings('privacy')">
         <div class="list-left"><div class="icon-box">&#128737;&#65039;</div>Confidentialit&eacute; &amp; s&eacute;curit&eacute;</div>
         <span class="chev">&rsaquo;</span>
       </div>
-      <div class="list-item" style="border-bottom:none;">
+      <div class="list-item" style="border-bottom:none;" onclick="openSettings('report')">
         <div class="list-left"><div class="icon-box">&#128681;</div>Signaler un probl&egrave;me</div>
         <span class="chev">&rsaquo;</span>
       </div>
@@ -700,13 +721,13 @@
 
     <!-- ============ BOTTOM NAV ============ -->
     <div class="navbar" id="navbar" style="display:none;">
-      <button class="navitem active" id="nav-radar" onclick="showScreen('radar')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg>
-        Radar
-      </button>
-      <button class="navitem" id="nav-planifier" onclick="showScreen('planifier')">
+      <button class="navitem active" id="nav-planifier" onclick="showScreen('planifier')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/><circle cx="8.5" cy="14.5" r="1.2" fill="currentColor" stroke="none"/></svg>
         Planifier
+      </button>
+      <button class="navitem" id="nav-radar" onclick="showScreen('radar')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg>
+        Radar
       </button>
       <button class="navitem" id="nav-messages" onclick="showScreen('messages')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
@@ -792,6 +813,15 @@
         <input class="thread-field" id="threadField" placeholder="&Eacute;crire un message..." onkeydown="if(event.key==='Enter')sendThreadMsg()">
         <button class="thread-send" onclick="sendThreadMsg()">&#10148;</button>
       </div>
+    </div>
+
+    <!-- ============ SETTINGS OVERLAY ============ -->
+    <div class="editor" id="settings">
+      <div class="editor-head">
+        <button class="thread-back" onclick="closeSettings()">&#8592;</button>
+        <div class="editor-title" id="settingsTitle">R&eacute;glages</div>
+      </div>
+      <div class="editor-body" id="settingsBody"></div>
     </div>
 
     <!-- ============ PROFILE EDITOR OVERLAY ============ -->
@@ -1263,6 +1293,126 @@ function onPhotoChange(e){
   };
   reader.readAsDataURL(file);
 }
+/* ===== Réglages du profil : chaque entrée du menu ouvre un vrai écran ===== */
+const ES_PREFS_KEY = 'es_prefs_v1';
+function esPrefs(){
+  try{ return JSON.parse(localStorage.getItem(ES_PREFS_KEY) || '{}'); }catch(e){ return {}; }
+}
+function esSetPref(key, value){
+  const prefs = esPrefs();
+  prefs[key] = value;
+  try{ localStorage.setItem(ES_PREFS_KEY, JSON.stringify(prefs)); }catch(e){}
+}
+function esTogglePref(el, key){
+  const on = el.classList.toggle('on');
+  esSetPref(key, on);
+}
+function prefRow(label, hint, key, defaultOn){
+  const prefs = esPrefs();
+  const on = (key in prefs) ? prefs[key] : defaultOn;
+  return `
+    <div class="pref-row">
+      <div class="pref-text"><div class="pref-label">${label}</div><div class="pref-hint">${hint}</div></div>
+      <div class="toggle ${on ? 'on' : ''}" onclick="esTogglePref(this,'${key}')"><div class="knob"></div></div>
+    </div>`;
+}
+
+const ES_SETTINGS = {
+  cuisine: {
+    title: 'Préférences culinaires',
+    render: () => `
+      <p class="settings-intro">Ces goûts apparaissent sur ton profil et aident les autres à savoir quoi te proposer.</p>
+      <button class="save-btn" onclick="closeSettings(); openEditor();">Modifier mes goûts et centres d'intérêt</button>`
+  },
+  ambiance: {
+    title: 'Ambiance',
+    render: () => `
+      <p class="settings-intro">Choisis l'apparence de l'application. Le changement est immédiat.</p>
+      <div class="chip-group" id="ambianceGroup">
+        <div class="chip" onclick="pickAmbiance(this,'neon')">Néon</div>
+        <div class="chip" onclick="pickAmbiance(this,'golden')">Golden Hour</div>
+        <div class="chip" onclick="pickAmbiance(this,'night')">Night Social</div>
+      </div>`,
+    after: () => {
+      const current = document.documentElement.getAttribute('data-app-theme') || 'neon';
+      const order = ['neon','golden','night'];
+      document.querySelectorAll('#ambianceGroup .chip').forEach((c,i)=>{
+        c.classList.toggle('active', order[i] === current);
+      });
+    }
+  },
+  notifications: {
+    title: 'Notifications de proximité',
+    render: () => `
+      <p class="settings-intro">Tu décides de ce qui mérite de faire vibrer ton téléphone.</p>
+      ${prefRow('Quelqu\'un de dispo près de moi', 'Seulement si tu es toi-même disponible', 'notifNearby', true)}
+      ${prefRow('Nouvelle demande de contact', 'Quand une personne te dit bonjour', 'notifHello', true)}
+      ${prefRow('Nouveaux messages', 'Dans tes conversations acceptées', 'notifMessages', true)}
+      ${prefRow('Plans à venir dans ma ville', 'Quand un repas est proposé près de chez toi', 'notifPlans', false)}`
+  },
+  privacy: {
+    title: 'Confidentialité & sécurité',
+    render: () => `
+      <p class="settings-intro">Personne ne peut t'écrire sans que tu aies accepté l'échange. Ces réglages vont plus loin.</p>
+      ${prefRow('Profil visible sur le radar', 'Désactive pour rester invisible sans quitter l\'app', 'visible', true)}
+      ${prefRow('Afficher mon métier', 'Sur ta fiche profil', 'showJob', true)}
+      ${prefRow('Afficher mon âge', 'Sur ta fiche profil', 'showAge', true)}
+      ${prefRow('Position approximative', 'Ne jamais montrer ta position exacte', 'fuzzyLocation', true)}
+      <div class="settings-section">
+        <h4>Modération</h4>
+        <p class="settings-intro">Tout signalement est examiné par notre équipe. Un profil signalé plusieurs fois est suspendu le temps de la vérification.</p>
+        <button class="save-btn" onclick="openSettings('report')">Signaler un profil ou un comportement</button>
+      </div>`
+  },
+  report: {
+    title: 'Signaler un problème',
+    render: () => `
+      <p class="settings-intro">Dis-nous ce qui s'est passé. Les signalements sont confidentiels : la personne concernée n'est jamais informée de ton identité.</p>
+      <div class="field-group">
+        <span class="field-label">Motif</span>
+        <div class="chip-group" id="reportReason">
+          <div class="chip active" onclick="selectSingle(this,'reportReason')">Comportement déplacé</div>
+          <div class="chip" onclick="selectSingle(this,'reportReason')">Faux profil</div>
+          <div class="chip" onclick="selectSingle(this,'reportReason')">Propos haineux</div>
+          <div class="chip" onclick="selectSingle(this,'reportReason')">Ne s'est pas présenté</div>
+          <div class="chip" onclick="selectSingle(this,'reportReason')">Autre</div>
+        </div>
+      </div>
+      <div class="field-group">
+        <span class="field-label">Personne concernée (optionnel)</span>
+        <input class="field-input" id="reportWho" placeholder="Prénom tel qu'il apparaît dans l'app">
+      </div>
+      <div class="field-group">
+        <span class="field-label">Ce qui s'est passé</span>
+        <textarea class="field-textarea" id="reportText" placeholder="Décris la situation, même brièvement."></textarea>
+      </div>
+      <button class="save-btn" onclick="sendReport()">Envoyer le signalement</button>`
+  }
+};
+
+function pickAmbiance(el, theme){
+  selectSingle(el, 'ambianceGroup');
+  setAppTheme(theme);
+}
+
+function openSettings(topic){
+  const conf = ES_SETTINGS[topic];
+  if(!conf) return;
+  document.getElementById('settingsTitle').textContent = conf.title;
+  document.getElementById('settingsBody').innerHTML = conf.render();
+  document.getElementById('settingsBody').scrollTop = 0;
+  if(conf.after) conf.after();
+  document.getElementById('settings').classList.add('open');
+}
+function closeSettings(){ document.getElementById('settings').classList.remove('open'); }
+
+function sendReport(){
+  const text = (document.getElementById('reportText').value || '').trim();
+  if(!text){ showToast('Décris brièvement ce qui s\'est passé'); return; }
+  closeSettings();
+  showToast('Signalement envoyé — notre équipe le traite sous 24 h');
+}
+
 function startSignup(){ isSignupFlow = true; openEditor(); }
 function openEditor(){ document.getElementById('editor').classList.add('open'); }
 function closeEditor(){ document.getElementById('editor').classList.remove('open'); }
@@ -1345,16 +1495,70 @@ function prepConfirmMapsLink(a){
   return true;
 }
 
+/* Ton propre plan : la liste "Plans à venir" ne montre que ceux des autres,
+   il faut donc te confirmer le tien séparément. */
+function esFormatDate(iso){
+  if(!iso) return '';
+  const d = new Date(iso + 'T12:00:00');
+  if(isNaN(d)) return iso;
+  const txt = d.toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long'});
+  return txt.charAt(0).toUpperCase() + txt.slice(1);
+}
+function esRestorePlanForm(){
+  const dateEl = document.getElementById('planDate');
+  if(!dateEl) return;
+  const plan = esMyPlan();
+  if(plan){
+    if(plan.date) dateEl.value = plan.date;
+    if(plan.timeFrom) document.getElementById('planTimeFrom').value = plan.timeFrom;
+    if(plan.timeTo) document.getElementById('planTimeTo').value = plan.timeTo;
+    if(plan.minPeople) document.getElementById('planMin').value = plan.minPeople;
+    if(plan.maxPeople) document.getElementById('planMax').value = plan.maxPeople;
+    if(plan.pitch) document.getElementById('planPitch').value = plan.pitch;
+    if(plan.restaurant) document.getElementById('planRestaurant').value = plan.restaurant;
+    if(plan.city) document.getElementById('locCity').value = plan.city;
+    if(plan.area) document.getElementById('locArea').value = plan.area;
+  } else if(!dateEl.value){
+    dateEl.value = new Date().toISOString().slice(0,10);   // par défaut : aujourd'hui
+  }
+}
+
+const ES_MY_PLAN_KEY = 'es_my_plan_v1';
+function esMyPlan(){
+  try{ return JSON.parse(localStorage.getItem(ES_MY_PLAN_KEY) || 'null'); }catch(e){ return null; }
+}
+function esSaveMyPlan(plan){
+  try{
+    if(plan) localStorage.setItem(ES_MY_PLAN_KEY, JSON.stringify(plan));
+    else localStorage.removeItem(ES_MY_PLAN_KEY);
+  }catch(e){}
+}
+function renderMyPlan(){
+  const box = document.getElementById('myPlanBox');
+  if(!box) return;
+  const plan = esMyPlan();
+  if(!plan){ box.innerHTML = ''; return; }
+  const lieu = [plan.city, plan.area].filter(Boolean).join(' · ');
+  box.innerHTML = `
+    <div class="my-plan">
+      <div class="my-plan-head">Ton plan est en ligne</div>
+      <div class="my-plan-title">${MEAL_EMOJI[plan.mealType] || '🍜'} ${plan.when} · ${plan.slot}</div>
+      <div class="my-plan-meta">${lieu}${plan.restaurant ? ' · ' + plan.restaurant : ''}${plan.minPeople ? ' · ' + plan.minPeople + ' à ' + plan.maxPeople + ' personnes' : ''}</div>
+      ${plan.pitch ? `<div class="my-plan-meta">« ${plan.pitch} »</div>` : ''}
+      <div class="my-plan-note">Visible par les autres membres. Ils peuvent te dire bonjour depuis leur écran Planifier.</div>
+    </div>`;
+}
+
 function renderPlans(){
   const el = document.getElementById('plansList');
   const cityFilterEl = document.getElementById('planFilterCity');
-  const whenFilterEl = document.getElementById('planFilterWhen');
+  const dateFilterEl = document.getElementById('planFilterDate');
   const cityFilter = cityFilterEl ? cityFilterEl.value.trim().toLowerCase() : '';
-  const whenFilter = whenFilterEl ? whenFilterEl.value : '';
+  const dateFilter = dateFilterEl ? dateFilterEl.value : '';
 
   const filtered = plans.filter(p=>{
     if(cityFilter && !(p.city||'').toLowerCase().includes(cityFilter)) return false;
-    if(whenFilter && p.when !== whenFilter) return false;
+    if(dateFilter && p.date !== dateFilter) return false;
     return true;
   });
 
@@ -1371,7 +1575,8 @@ function renderPlans(){
       <div class="plan-icon">${MEAL_EMOJI[p.mealType] || '🍜'}</div>
       <div class="p-body">
         <div class="plan-name">${p.name}</div>
-        <div class="plan-meta">${p.when} · ${p.slot} · ${p.city}${p.area ? ' ('+p.area+')' : ''}${p.restaurant ? ' · '+p.restaurant : ''}</div>
+        <div class="plan-meta">${p.when} · ${p.slot} · ${p.city}${p.area ? ' ('+p.area+')' : ''}${p.restaurant ? ' · '+p.restaurant : ''}${p.minPeople ? ' · ' + p.minPeople + '–' + p.maxPeople + ' pers.' : ''}</div>
+        ${p.pitch ? `<div class="plan-meta" style="color:var(--off); font-style:italic;">« ${p.pitch} »</div>` : ''}
       </div>
     </div>
   `;
@@ -1382,18 +1587,29 @@ renderPlans();
 function applyLocation(){
   const city = document.getElementById('locCity').value.trim() || 'Lyon';
   const area = document.getElementById('locArea').value.trim();
-  const when = getActiveChip('planDayGroup');
-  const slot = getActiveChip('planSlotGroup');
+  const date = document.getElementById('planDate').value;
+  const timeFrom = document.getElementById('planTimeFrom').value || '19:30';
+  const timeTo = document.getElementById('planTimeTo').value || '21:30';
+  const minPeople = document.getElementById('planMin').value;
+  const maxPeople = document.getElementById('planMax').value;
+  const pitch = document.getElementById('planPitch').value.trim();
   const mealKey = getActiveChipKey('planMealGroup');
   const restaurant = document.getElementById('planRestaurant').value.trim();
+  if(!date){ showToast('Choisis une date'); return; }
+  if(parseInt(maxPeople,10) < parseInt(minPeople,10)){ showToast('Le maximum doit être supérieur au minimum'); return; }
+  const when = esFormatDate(date);
+  const slot = timeFrom.replace(':','h') + ' – ' + timeTo.replace(':','h');
   const short = area ? city + ' · ' + area.replace(' arrondissement','e') : city;
   document.getElementById('cityPillText').textContent = short;
 
+  const plan = {city, area, when, slot, date, timeFrom, timeTo, minPeople, maxPeople, pitch, mealType: mealKey, restaurant};
+  esSaveMyPlan(plan);
   if(LIVE.on){
-    esApi('/api/plan', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({
-      id: LIVE.me.id, name: LIVE.me.name, city, area, when, slot, mealType: mealKey, restaurant
-    })}).catch(()=>{});
+    esApi('/api/plan', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(
+      Object.assign({id: LIVE.me.id, name: LIVE.me.name}, plan)
+    )}).catch(()=>{});
   }
+  renderMyPlan();
   showToast('Plan enregistré — ' + when.toLowerCase() + ', ' + slot);
 }
 function clearPlan(){
@@ -1401,6 +1617,8 @@ function clearPlan(){
     esApi('/api/plan/clear', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id: LIVE.me.id})}).catch(()=>{});
   }
   document.getElementById('planRestaurant').value = '';
+  esSaveMyPlan(null);
+  renderMyPlan();
   showToast('Plan effacé');
 }
 
@@ -1425,7 +1643,7 @@ setAppTheme('neon');
 function enterApp(){
   document.getElementById('screen-splash').style.display = 'none';
   document.getElementById('navbar').style.display = 'flex';
-  showScreen('radar');
+  showScreen('planifier');
 }
 
 function showScreen(name){
@@ -1434,7 +1652,7 @@ function showScreen(name){
     document.getElementById('nav-'+s).classList.toggle('active', s===name);
   });
   closeSheet();
-  if(name === 'planifier'){ refreshPlanMap(); renderPlans(); }
+  if(name === 'planifier'){ refreshPlanMap(); renderPlans(); renderMyPlan(); esRestorePlanForm(); }
 }
 
 /* ===================== MODE DIRECT (deux appareils, test réel) =====================
@@ -1697,7 +1915,10 @@ async function esPing(){
   NET.mode = ok ? 'relay' : 'none';
   return ok;
 }
-function esShowLiveBadge(){ document.getElementById('liveBadge').classList.add('show'); }
+function esShowLiveBadge(){
+  const right = document.getElementById('statusRight');
+  if(right) right.innerHTML = '<span class="live-dot"></span>En direct';
+}
 
 const ES_COMBOS = [
   'linear-gradient(135deg,var(--pink),var(--pink-deep))',
@@ -1839,7 +2060,8 @@ async function esPollPlans(){
     plans.length = 0;
     (data.plans||[]).forEach(p=>{
       plans.push({
-        name:p.name, mealType:p.mealType, when:p.when, slot:p.slot,
+        name:p.name, mealType:p.mealType, when:p.when, slot:p.slot, date:p.date,
+        minPeople:p.minPeople, maxPeople:p.maxPeople, pitch:p.pitch,
         city:p.city, area:p.area, restaurant:p.restaurant, liveId:p.id,
         profile:p.profile,
       });
@@ -2078,6 +2300,8 @@ async function initLiveMode(){
   setInterval(esPollPlans, 4000);
 }
 esRestoreProfileUI();
+renderMyPlan();
+esRestorePlanForm();
 initLiveMode();
 </script>
 
