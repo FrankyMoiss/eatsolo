@@ -443,6 +443,8 @@
   .my-plan-title{ font-family:var(--display); font-size:17px; font-weight:600; margin-top:6px; }
   .my-plan-meta{ font-size:12.5px; color:var(--off); margin-top:4px; line-height:1.45; }
   .my-plan-note{ font-size:11.5px; color:var(--muted); margin-top:10px; }
+  .auth-error{ font-size:12.5px; color:var(--pink-soft); min-height:18px; margin-bottom:10px; line-height:1.4; }
+  .auth-switch{ text-align:center; margin-top:16px; font-size:13px; font-weight:600; color:var(--muted); cursor:pointer; text-decoration:underline; text-underline-offset:3px; }
   .settings-intro{ font-size:13px; color:var(--muted); line-height:1.55; margin:0 0 18px; }
   .settings-section{ margin-top:26px; }
   .settings-section h4{ font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--muted); margin:0 0 8px; }
@@ -496,8 +498,8 @@
         <img class="splash-logo" src="data:image/jpeg;base64,__LOGO_B64__" alt="EatSolo">
         <div class="splash-tag">Je suis seul, mais je ne veux pas manger seul.</div>
         <div class="splash-sub">Trouve quelqu'un de dispo pr&egrave;s de toi, l&agrave; maintenant &mdash; caf&eacute;, d&eacute;jeuner, d&icirc;ner ou verre. Pas d'&eacute;v&eacute;nement, pas d'attente.</div>
-        <button class="splash-cta" onclick="startSignup()">S'inscrire</button>
-        <button class="splash-ghost" onclick="enterApp()">J'ai d&eacute;j&agrave; un compte</button>
+        <button class="splash-cta" onclick="openAuth('signup')">S'inscrire</button>
+        <button class="splash-ghost" onclick="openAuth('login')">J'ai d&eacute;j&agrave; un compte</button>
 
         <div class="theme-picker">
           <div class="theme-picker-label">Ton ambiance</div>
@@ -698,8 +700,12 @@
         <div class="list-left"><div class="icon-box">&#128737;&#65039;</div>Confidentialit&eacute; &amp; s&eacute;curit&eacute;</div>
         <span class="chev">&rsaquo;</span>
       </div>
-      <div class="list-item" style="border-bottom:none;" onclick="openSettings('report')">
+      <div class="list-item" onclick="openSettings('report')">
         <div class="list-left"><div class="icon-box">&#128681;</div>Signaler un probl&egrave;me</div>
+        <span class="chev">&rsaquo;</span>
+      </div>
+      <div class="list-item" style="border-bottom:none;" onclick="openSettings('account')">
+        <div class="list-left"><div class="icon-box">&#128273;</div>Mon compte</div>
         <span class="chev">&rsaquo;</span>
       </div>
     </div>
@@ -797,6 +803,52 @@
       <div class="thread-input" id="threadInputBar">
         <input class="thread-field" id="threadField" placeholder="&Eacute;crire un message..." onkeydown="if(event.key==='Enter')sendThreadMsg()">
         <button class="thread-send" onclick="sendThreadMsg()">&#10148;</button>
+      </div>
+    </div>
+
+    <!-- ============ AUTH OVERLAY ============ -->
+    <div class="editor" id="auth">
+      <div class="editor-head">
+        <button class="thread-back" onclick="closeAuth()">&#8592;</button>
+        <div class="editor-title" id="authTitle">Cr&eacute;er un compte</div>
+      </div>
+      <div class="editor-body">
+        <p class="settings-intro" id="authIntro">Ton adresse sert uniquement &agrave; s&eacute;curiser ton compte. Elle n'est jamais visible par les autres membres.</p>
+
+        <div class="field-group">
+          <span class="field-label">Adresse email</span>
+          <input class="field-input" type="email" id="authEmail" autocomplete="email" placeholder="prenom@exemple.fr">
+        </div>
+        <div class="field-group">
+          <span class="field-label">Mot de passe</span>
+          <input class="field-input" type="password" id="authPass" autocomplete="new-password" placeholder="8 caract&egrave;res minimum">
+        </div>
+        <div class="field-group" id="authConfirmGroup">
+          <span class="field-label">Confirme le mot de passe</span>
+          <input class="field-input" type="password" id="authPass2" autocomplete="new-password" placeholder="Saisis-le une seconde fois">
+        </div>
+
+        <div class="auth-error" id="authError"></div>
+        <button class="save-btn" id="authSubmit" onclick="submitAuth()">Cr&eacute;er mon compte</button>
+        <div class="auth-switch" id="authSwitch" onclick="toggleAuthMode()">D&eacute;j&agrave; un compte ? Se connecter</div>
+      </div>
+    </div>
+
+    <!-- ============ VERIFY OVERLAY ============ -->
+    <div class="editor" id="verify">
+      <div class="editor-head">
+        <button class="thread-back" onclick="closeVerify()">&#8592;</button>
+        <div class="editor-title">V&eacute;rifie ton adresse</div>
+      </div>
+      <div class="editor-body">
+        <p class="settings-intro">Nous venons d'envoyer un email &agrave; <b id="verifyEmail">—</b>. Clique le lien qu'il contient, ou saisis le code &agrave; 6 chiffres ci-dessous.</p>
+        <div class="field-group">
+          <span class="field-label">Code de v&eacute;rification</span>
+          <input class="field-input" id="verifyCode" inputmode="numeric" maxlength="6" placeholder="6 chiffres">
+        </div>
+        <div class="auth-error" id="verifyError"></div>
+        <button class="save-btn" onclick="submitVerify()">Valider mon adresse</button>
+        <div class="auth-switch" onclick="resendVerify()">Je n'ai rien re&ccedil;u — renvoyer l'email</div>
       </div>
     </div>
 
@@ -1339,6 +1391,25 @@ const ES_SETTINGS = {
         <button class="save-btn" onclick="openSettings('report')">Signaler un profil ou un comportement</button>
       </div>`
   },
+  account: {
+    title: 'Mon compte',
+    render: () => {
+      const acc = esAccount();
+      if(!acc) return `
+        <p class="settings-intro">Tu utilises l'application sans compte. Un compte te permet de retrouver ton profil et tes conversations sur un autre appareil.</p>
+        <button class="save-btn" onclick="closeSettings(); openAuth('signup');">Créer un compte</button>
+        <div class="auth-switch" onclick="closeSettings(); openAuth('login');">J'ai déjà un compte</div>`;
+      return `
+        <div class="field-group">
+          <span class="field-label">Adresse email</span>
+          <div class="pref-label">${acc.email}</div>
+          <div class="pref-hint">${acc.verified ? '✓ Vérifiée' : 'En attente de vérification'}</div>
+        </div>
+        <p class="settings-intro">Ton adresse n'est jamais montrée aux autres membres.</p>
+        ${acc.verified ? '' : `<button class="save-btn" onclick="closeSettings(); startVerify('${acc.email}');">Vérifier mon adresse</button>`}
+        <div class="auth-switch" onclick="logout()">Se déconnecter</div>`;
+    }
+  },
   report: {
     title: 'Signaler un problème',
     render: () => `
@@ -1386,6 +1457,191 @@ function sendReport(){
   if(!text){ showToast('Décris brièvement ce qui s\'est passé'); return; }
   closeSettings();
   showToast('Signalement envoyé — notre équipe le traite sous 24 h');
+}
+
+/* ===== Comptes =====
+   Deux back-ends possibles, même interface :
+   - Supabase, dès que SUPABASE_URL / SUPABASE_KEY sont renseignés : vrais
+     mots de passe et vrai email de vérification.
+   - Sinon, mode local : le compte reste sur l'appareil et le code de
+     vérification s'affiche à l'écran, pour pouvoir tester le parcours
+     complet sans dépendre d'un service.                                  */
+const SUPABASE_URL = '';   // à remplir après création du projet Supabase
+const SUPABASE_KEY = '';   // clé "anon public", prévue pour être publique
+
+const AUTH_KEY = 'es_account_v1';
+let authMode = 'signup';
+
+function authBackend(){ return (SUPABASE_URL && SUPABASE_KEY) ? 'supabase' : 'local'; }
+function esAccount(){
+  try{ return JSON.parse(localStorage.getItem(AUTH_KEY) || 'null'); }catch(e){ return null; }
+}
+function esSaveAccount(acc){
+  try{
+    if(acc) localStorage.setItem(AUTH_KEY, JSON.stringify(acc));
+    else localStorage.removeItem(AUTH_KEY);
+  }catch(e){}
+}
+function isLoggedIn(){
+  const a = esAccount();
+  return !!(a && a.email && a.verified);
+}
+
+function openAuth(mode){
+  authMode = mode || 'signup';
+  applyAuthMode();
+  document.getElementById('authError').textContent = '';
+  document.getElementById('auth').classList.add('open');
+}
+function closeAuth(){ document.getElementById('auth').classList.remove('open'); }
+function toggleAuthMode(){ openAuth(authMode === 'signup' ? 'login' : 'signup'); }
+function applyAuthMode(){
+  const signup = authMode === 'signup';
+  document.getElementById('authTitle').textContent = signup ? 'Créer un compte' : 'Se connecter';
+  document.getElementById('authSubmit').textContent = signup ? 'Créer mon compte' : 'Se connecter';
+  document.getElementById('authConfirmGroup').style.display = signup ? 'block' : 'none';
+  document.getElementById('authSwitch').textContent = signup
+    ? 'Déjà un compte ? Se connecter'
+    : 'Pas encore de compte ? S\'inscrire';
+  document.getElementById('authIntro').textContent = signup
+    ? "Ton adresse sert uniquement à sécuriser ton compte. Elle n'est jamais visible par les autres membres."
+    : 'Connecte-toi avec l\'adresse utilisée à l\'inscription.';
+  document.getElementById('authPass').setAttribute('autocomplete', signup ? 'new-password' : 'current-password');
+}
+
+function authFail(msg){ document.getElementById('authError').textContent = msg; }
+
+async function submitAuth(){
+  const email = (document.getElementById('authEmail').value || '').trim().toLowerCase();
+  const pass = document.getElementById('authPass').value || '';
+  const pass2 = document.getElementById('authPass2').value || '';
+  authFail('');
+
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return authFail('Cette adresse email ne semble pas valide.');
+  if(!pass) return authFail('Saisis ton mot de passe.');
+  if(authMode === 'signup'){
+    // la règle de longueur ne vaut qu'à la création : à la connexion on ne commente pas le mot de passe saisi
+    if(pass.length < 8) return authFail('Le mot de passe doit faire au moins 8 caractères.');
+    if(pass !== pass2) return authFail('Les deux mots de passe ne sont pas identiques.');
+  }
+
+  if(authBackend() === 'supabase'){
+    return authMode === 'signup' ? supabaseSignup(email, pass) : supabaseLogin(email, pass);
+  }
+
+  // mode local
+  const existing = esAccount();
+  if(authMode === 'login'){
+    if(!existing || existing.email !== email) return authFail('Aucun compte sur cet appareil avec cette adresse.');
+    if(existing.pass !== pass) return authFail('Mot de passe incorrect.');
+    if(!existing.verified){ closeAuth(); return startVerify(email); }
+    closeAuth();
+    afterLogin();
+    return;
+  }
+  if(existing && existing.email === email && existing.verified) return authFail('Un compte existe déjà avec cette adresse.');
+  const code = String(Math.floor(100000 + Math.random() * 900000));
+  esSaveAccount({email, pass, verified:false, code});
+  closeAuth();
+  startVerify(email);
+}
+
+async function supabaseSignup(email, password){
+  try{
+    const r = await fetch(SUPABASE_URL + '/auth/v1/signup', {
+      method:'POST',
+      headers:{'Content-Type':'application/json', apikey: SUPABASE_KEY},
+      body: JSON.stringify({email, password}),
+    });
+    const data = await r.json();
+    if(!r.ok) return authFail(data.msg || data.error_description || "La création du compte a échoué.");
+    esSaveAccount({email, verified:false});
+    closeAuth();
+    startVerify(email);
+  }catch(e){ authFail('Connexion impossible. Vérifie ta connexion internet.'); }
+}
+
+async function supabaseLogin(email, password){
+  try{
+    const r = await fetch(SUPABASE_URL + '/auth/v1/token?grant_type=password', {
+      method:'POST',
+      headers:{'Content-Type':'application/json', apikey: SUPABASE_KEY},
+      body: JSON.stringify({email, password}),
+    });
+    const data = await r.json();
+    if(!r.ok) return authFail(data.error_description || data.msg || 'Email ou mot de passe incorrect.');
+    esSaveAccount({email, verified:true, token:data.access_token});
+    closeAuth();
+    afterLogin();
+  }catch(e){ authFail('Connexion impossible. Vérifie ta connexion internet.'); }
+}
+
+function startVerify(email){
+  document.getElementById('verifyEmail').textContent = email;
+  document.getElementById('verifyError').textContent = '';
+  document.getElementById('verifyCode').value = '';
+  document.getElementById('verify').classList.add('open');
+  const acc = esAccount();
+  if(authBackend() === 'local' && acc && acc.code){
+    showToast('Code de test : ' + acc.code);     // sans service email, on le montre
+  }
+}
+function closeVerify(){ document.getElementById('verify').classList.remove('open'); }
+
+async function submitVerify(){
+  const code = (document.getElementById('verifyCode').value || '').trim();
+  const acc = esAccount();
+  const fail = m => { document.getElementById('verifyError').textContent = m; };
+  if(!acc) return fail('Recommence l\'inscription.');
+
+  if(authBackend() === 'supabase'){
+    try{
+      const r = await fetch(SUPABASE_URL + '/auth/v1/verify', {
+        method:'POST',
+        headers:{'Content-Type':'application/json', apikey: SUPABASE_KEY},
+        body: JSON.stringify({type:'signup', email:acc.email, token:code}),
+      });
+      const data = await r.json();
+      if(!r.ok) return fail(data.msg || 'Code incorrect ou expiré.');
+      esSaveAccount(Object.assign({}, acc, {verified:true, token:data.access_token}));
+      closeVerify();
+      afterLogin();
+    }catch(e){ fail('Connexion impossible.'); }
+    return;
+  }
+
+  if(code !== acc.code) return fail('Code incorrect.');
+  esSaveAccount(Object.assign({}, acc, {verified:true}));
+  closeVerify();
+  afterLogin();
+}
+
+function resendVerify(){
+  const acc = esAccount();
+  if(!acc) return;
+  if(authBackend() === 'supabase'){
+    fetch(SUPABASE_URL + '/auth/v1/resend', {
+      method:'POST',
+      headers:{'Content-Type':'application/json', apikey: SUPABASE_KEY},
+      body: JSON.stringify({type:'signup', email:acc.email}),
+    }).catch(()=>{});
+    showToast('Email renvoyé');
+    return;
+  }
+  showToast('Code de test : ' + acc.code);
+}
+
+/* Compte validé : on enchaîne sur le profil pour les nouveaux, l'app pour les autres. */
+function afterLogin(){
+  const prof = esLocalProfile();
+  if(prof && prof.name){ enterApp(); return; }
+  isSignupFlow = true;
+  openEditor();
+}
+
+function logout(){
+  esSaveAccount(null);
+  location.reload();
 }
 
 function startSignup(){ isSignupFlow = true; openEditor(); }
