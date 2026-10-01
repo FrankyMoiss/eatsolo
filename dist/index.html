@@ -53,6 +53,7 @@
     --pink-dim:rgba(255,31,125,0.16);
     --pink-glow:rgba(255,31,125,0.55);
     --pink-deep:#7a1140;
+    --on-accent:#ffffff;
     --white:#ffffff;
     --off:#cfcfd6;
     --muted:#8b8b96;
@@ -71,6 +72,7 @@
     --pink: oklch(56% 0.14 40);
     --pink-soft: oklch(64% 0.12 44);
     --pink-deep: oklch(35% 0.10 45);
+    --on-accent: oklch(99% 0.01 75);
     --pink-dim: oklch(90% 0.05 45 / 32%);
     --pink-glow: oklch(56% 0.14 40 / 32%);
     --white: oklch(22% 0.02 55);
@@ -88,6 +90,7 @@
     --pink: oklch(72% 0.13 55);
     --pink-soft: oklch(85% 0.08 55);
     --pink-deep: oklch(45% 0.10 50);
+    --on-accent: oklch(22% 0.03 50);
     --pink-dim: oklch(35% 0.08 50 / 40%);
     --pink-glow: oklch(72% 0.13 55 / 35%);
     --white: oklch(96% 0.01 60);
@@ -258,7 +261,10 @@
     flex:1; text-align:center; padding:8px 0; border-radius:100px; font-size:12.5px; font-weight:700;
     color:var(--muted); cursor:pointer; font-family:var(--body);
   }
-  .view-btn.active{ background:var(--surface-3); color:var(--white); }
+  .view-btn.active{
+    background:var(--pink); color:var(--on-accent);
+    box-shadow:0 2px 12px color-mix(in srgb, var(--pink) 45%, transparent);
+  }
 
   /* ---------- people list ---------- */
   .people{ padding:0 20px; display:flex; flex-direction:column; gap:12px; }
@@ -693,8 +699,8 @@
         <button class="photo-btn" style="margin-top:14px; border:1px solid var(--pink); color:var(--pink-soft);" onclick="openEditor()">Cr&eacute;er / modifier mon profil</button>
       </div>
       <div class="stat-row">
-        <div class="stat"><b>27</b><span>Repas partag&eacute;s</span></div>
-        <div class="stat"><b>8</b><span>Villes</span></div>
+        <div class="stat"><b id="statMeals">0</b><span>Repas partag&eacute;s</span></div>
+        <div class="stat"><b id="statCities">0</b><span>Villes</span></div>
         <div class="stat"><b id="profileSince">2026</b><span>Membre depuis</span></div>
       </div>
       <div class="premium-banner">
@@ -1517,6 +1523,12 @@ function esSaveAccount(acc){
     else localStorage.removeItem(AUTH_KEY);
   }catch(e){}
 }
+/* L'identifiant Supabase du compte : c'est lui qui rend le profil portable
+   d'un téléphone à l'autre. */
+function esUserIdFrom(data){
+  if(!data) return '';
+  return (data.user && data.user.id) || data.id || '';
+}
 function isLoggedIn(){
   const a = esAccount();
   return !!(a && a.email && a.verified);
@@ -1595,12 +1607,13 @@ async function supabaseSignup(email, password){
     // directement une session : inutile de passer par l'écran de vérification.
     const session = data.access_token || (data.session && data.session.access_token);
     if(session){
-      esSaveAccount({email, verified:true, token:session});
+      esSaveAccount({email, verified:true, token:session,
+                     refresh: data.refresh_token || '', uid: esUserIdFrom(data)});
       closeAuth();
       afterLogin();
       return;
     }
-    esSaveAccount({email, verified:false});
+    esSaveAccount({email, verified:false, uid: esUserIdFrom(data)});
     closeAuth();
     startVerify(email);
   }catch(e){ authFail('Connexion impossible. Vérifie ta connexion internet.'); }
@@ -1615,7 +1628,8 @@ async function supabaseLogin(email, password){
     });
     const data = await r.json();
     if(!r.ok) return authFail(data.error_description || data.msg || 'Email ou mot de passe incorrect.');
-    esSaveAccount({email, verified:true, token:data.access_token});
+    esSaveAccount({email, verified:true, token:data.access_token,
+                   refresh: data.refresh_token || '', uid: esUserIdFrom(data)});
     closeAuth();
     afterLogin();
   }catch(e){ authFail('Connexion impossible. Vérifie ta connexion internet.'); }
@@ -1648,7 +1662,8 @@ async function submitVerify(){
       });
       const data = await r.json();
       if(!r.ok) return fail(data.msg || 'Code incorrect ou expiré.');
-      esSaveAccount(Object.assign({}, acc, {verified:true, token:data.access_token}));
+      esSaveAccount(Object.assign({}, acc, {verified:true, token:data.access_token,
+        refresh: data.refresh_token || acc.refresh || '', uid: esUserIdFrom(data) || acc.uid}));
       closeVerify();
       afterLogin();
     }catch(e){ fail('Connexion impossible.'); }
@@ -1678,7 +1693,8 @@ async function confirmLinkClicked(){
     });
     const data = await r.json();
     if(!r.ok) return fail("L'adresse n'est pas encore validée. Ouvre l'email et clique le lien.");
-    esSaveAccount(Object.assign({}, acc, {verified:true, token:data.access_token}));
+    esSaveAccount(Object.assign({}, acc, {verified:true, token:data.access_token,
+      refresh: data.refresh_token || acc.refresh || '', uid: esUserIdFrom(data) || acc.uid}));
     closeVerify();
     afterLogin();
   }catch(e){ fail('Connexion impossible.'); }
@@ -1699,17 +1715,152 @@ function resendVerify(){
   showToast('Code de test : ' + acc.code);
 }
 
-/* Compte validé : on enchaîne sur le profil pour les nouveaux, l'app pour les autres. */
-function afterLogin(){
+/* ===================== PROFIL RATTACHÉ AU COMPTE =====================
+   Le profil ne vit plus seulement sur le téléphone : il est stocké dans
+   user_metadata côté Supabase, donc on le retrouve depuis n'importe quel
+   appareil avec le même email. La photo en est volontairement exclue (elle
+   voyagerait dans le jeton à chaque requête) : elle reste locale et se
+   transmet aux autres membres par le mode direct. */
+const ES_PROFILE_OWNER_KEY = 'es_profile_owner';
+
+async function esRefreshToken(){
+  const acc = esAccount();
+  if(!acc || !acc.refresh) return null;
+  try{
+    const r = await fetch(SUPABASE_URL + '/auth/v1/token?grant_type=refresh_token', {
+      method:'POST',
+      headers:{'Content-Type':'application/json', apikey: SUPABASE_KEY},
+      body: JSON.stringify({refresh_token: acc.refresh}),
+    });
+    const d = await r.json();
+    if(!r.ok || !d.access_token) return null;
+    esSaveAccount(Object.assign({}, acc, {
+      token: d.access_token,
+      refresh: d.refresh_token || acc.refresh,
+      uid: esUserIdFrom(d) || acc.uid,
+    }));
+    return d.access_token;
+  }catch(e){ return null; }
+}
+
+/* Appel authentifié à Supabase, avec un seul rattrapage si le jeton a expiré. */
+async function esAuthFetch(path, opts){
+  const acc = esAccount();
+  if(authBackend() !== 'supabase' || !acc || !acc.token) return null;
+  const go = token => fetch(SUPABASE_URL + path, Object.assign({}, opts || {}, {
+    headers: Object.assign({'Content-Type':'application/json', apikey: SUPABASE_KEY,
+                            Authorization: 'Bearer ' + token}, (opts && opts.headers) || {}),
+  }));
+  let r = await go(acc.token);
+  if(r.status === 401 || r.status === 403){
+    const fresh = await esRefreshToken();
+    if(fresh) r = await go(fresh);
+  }
+  return r;
+}
+
+function esAccountProfileFields(prof){
+  prof = prof || {};
+  return {
+    name: prof.name || '', age: prof.age || '', job: prof.job || '',
+    bio: prof.bio || '', gender: prof.gender || '',
+    cuisines: prof.cuisines || [], hobbies: prof.hobbies || [],
+  };
+}
+
+async function esPushProfileToAccount(){
   const prof = esLocalProfile();
-  if(prof && prof.name){ enterApp(); return; }
+  if(!prof || !prof.name) return;
+  try{
+    await esAuthFetch('/auth/v1/user', {
+      method:'PUT', body: JSON.stringify({data: esAccountProfileFields(prof)}),
+    });
+  }catch(e){}
+}
+
+async function esPullProfileFromAccount(){
+  try{
+    const r = await esAuthFetch('/auth/v1/user', {method:'GET'});
+    if(!r || !r.ok) return null;
+    const u = await r.json();
+    const meta = u.user_metadata || u.raw_user_meta_data || {};
+    if(!meta.name) return null;
+    const local = esLocalProfile();
+    const merged = Object.assign({}, esAccountProfileFields(meta),
+                                 {photo: local.photo || '', verified: true});
+    localStorage.setItem(ES_PROFILE_KEY, JSON.stringify(merged));
+    return merged;
+  }catch(e){ return null; }
+}
+
+/* Ce téléphone a-t-il servi à un autre compte ? Alors on repart propre
+   plutôt que de prêter le profil du précédent au nouvel arrivant. */
+function esClaimProfileOwner(uid){
+  if(!uid) return;
+  let prev = null;
+  try{ prev = localStorage.getItem(ES_PROFILE_OWNER_KEY); }catch(e){}
+  if(prev && prev !== uid){
+    try{
+      [ES_PROFILE_KEY, ES_MY_PLAN_KEY, 'es_photo', 'es_live_name', 'es_live_named']
+        .forEach(k => localStorage.removeItem(k));
+    }catch(e){}
+  }
+  try{ localStorage.setItem(ES_PROFILE_OWNER_KEY, uid); }catch(e){}
+}
+
+/* Change d'identifiant public sans laisser de fantôme : l'ancien id est
+   retiré du radar et sa table ouverte refermée. */
+function esRetireIdentity(oldId){
+  if(!oldId) return;
+  if(NET.mode === 'relay' && NET.mqtt){
+    try{
+      esPub(esBase()+'/pl/'+oldId, {id:oldId, active:false, ts:Date.now()});
+      esPub(esBase()+'/p/'+oldId, {id:oldId, available:false, ts:Date.now()});
+    }catch(e){}
+  } else if(NET.mode === 'server'){
+    fetch('/api/plan/clear', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({id: oldId})}).catch(()=>{});
+  }
+}
+
+function esAdoptAccountIdentity(){
+  const acc = esAccount();
+  if(!acc || !acc.uid) return;
+  esClaimProfileOwner(acc.uid);
+  let current = null;
+  try{ current = localStorage.getItem('es_live_id'); }catch(e){}
+  if(current === acc.uid){ if(LIVE.me) LIVE.me.id = acc.uid; return; }
+  esRetireIdentity(current);
+  try{ localStorage.setItem('es_live_id', acc.uid); }catch(e){}
+  if(LIVE.me) LIVE.me.id = acc.uid;
+}
+
+/* Compte validé : on enchaîne sur le profil pour les nouveaux, l'app pour les autres. */
+async function afterLogin(){
+  esAdoptAccountIdentity();
+  let prof = esLocalProfile();
+  if(!prof || !prof.name) prof = await esPullProfileFromAccount();
+  if(prof && prof.name){
+    esRestoreProfileUI();
+    esSaveName(prof.name);
+    esSendPresence();
+    enterApp();
+    return;
+  }
   isSignupFlow = true;
   openEditor();
 }
 
 function logout(){
+  let id = null;
+  try{ id = localStorage.getItem('es_live_id'); }catch(e){}
+  esRetireIdentity(id);
   esSaveAccount(null);
-  location.reload();
+  try{
+    [ES_PROFILE_KEY, ES_PROFILE_OWNER_KEY, ES_MY_PLAN_KEY, 'es_photo',
+     'es_live_id', 'es_live_name', 'es_live_named'].forEach(k => localStorage.removeItem(k));
+  }catch(e){}
+  setTimeout(()=>location.reload(), 250);
 }
 
 function startSignup(){ isSignupFlow = true; openEditor(); }
@@ -1972,8 +2123,15 @@ function showScreen(name){
 const LIVE = { on:false, me:null, threadTimer:null };
 
 function esLoadIdentity(){
+  const acc = esAccount();
+  const uid = (acc && acc.verified && acc.uid) ? acc.uid : '';
   let id = localStorage.getItem('es_live_id');
   let name = localStorage.getItem('es_live_name');
+  if(uid){
+    esClaimProfileOwner(uid);
+    if(id !== uid){ esRetireIdentity(id); id = uid; localStorage.setItem('es_live_id', id); }
+    name = localStorage.getItem('es_live_name');
+  }
   if(!id){
     id = (crypto.randomUUID ? crypto.randomUUID() : 'u-' + Math.random().toString(36).slice(2));
     localStorage.setItem('es_live_id', id);
@@ -2581,6 +2739,7 @@ saveProfile = function(){
   const name = document.getElementById('fPrenom').value.trim();
   if(name){ esSaveName(name); }
   esSendPresence();
+  esPushProfileToAccount();   // le profil appartient au compte, pas au téléphone
 };
 
 async function initLiveMode(){
