@@ -361,7 +361,6 @@
   .venue-icon{ width:46px; height:46px; border-radius:14px; background:var(--surface-3); display:flex; align-items:center; justify-content:center; font-size:20px; flex:none; }
   .venue-name{ font-weight:700; font-size:14.5px; }
   .venue-meta{ font-size:12px; color:var(--muted); margin-top:2px; font-weight:600; }
-  .venue-swap{ font-size:12px; color:var(--pink-soft); font-weight:700; cursor:pointer; margin-top:10px; display:inline-block; }
   .time-row{ display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
   .venue-suggest{
     margin-top:8px; border:1px solid var(--line); border-radius:14px; overflow:hidden;
@@ -373,7 +372,46 @@
   .venue-opt:active{ background:var(--surface-3); }
   .venue-opt b{ display:block; font-size:13.5px; font-weight:600; color:var(--white); }
   .venue-opt span{ font-size:11.5px; color:var(--muted); line-height:1.4; }
-  .gmaps-embed{ width:100%; height:170px; border:0; border-radius:16px; margin-top:10px; display:block; background:var(--surface-3); }
+  .gmaps-wrap{ position:relative; margin-top:10px; cursor:pointer; border-radius:16px; overflow:hidden; }
+  .gmaps-embed{ width:100%; height:170px; border:0; display:block; background:var(--surface-3); pointer-events:none; }
+  .gmaps-hint{
+    position:absolute; left:10px; bottom:10px; right:10px; text-align:center; font-size:12px; font-weight:700;
+    color:var(--white); background:color-mix(in srgb, var(--bg) 82%, transparent); backdrop-filter:blur(6px);
+    border:1px solid var(--line); border-radius:999px; padding:8px 12px;
+  }
+
+  /* ---------- carte plein écran ---------- */
+  .mapfull{
+    position:absolute; inset:0; z-index:88; background:var(--bg); display:none; flex-direction:column;
+  }
+  .mapfull.open{ display:flex; }
+  .mapfull-top{ display:flex; gap:8px; padding:12px 12px 10px; align-items:center; flex:none; }
+  .mapfull-search{
+    flex:1; min-width:0; background:var(--surface-2); border:1px solid var(--line); color:var(--white);
+    border-radius:12px; padding:12px 14px; font-size:14px; font-family:var(--body); outline:none;
+  }
+  .mapfull-search:focus{ border-color:var(--pink); }
+  .mapfull-close{
+    flex:none; width:42px; height:42px; border-radius:12px; border:1px solid var(--line);
+    background:var(--surface-2); color:var(--white); font-size:17px; cursor:pointer; line-height:1;
+  }
+  .mapfull-canvas{ flex:1; min-height:0; background:var(--surface-3); }
+  .mapfull-state{
+    position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); color:var(--muted);
+    font-size:13.5px; text-align:center; padding:0 24px; pointer-events:none;
+  }
+  .mapfull-pick{
+    flex:none; display:none; gap:12px; align-items:center; padding:14px 16px 20px;
+    background:var(--surface); border-top:1px solid var(--line);
+  }
+  .mapfull-pick.open{ display:flex; }
+  .mapfull-pick-body{ flex:1; min-width:0; }
+  .mapfull-pick-name{ font-weight:700; font-size:15px; }
+  .mapfull-pick-meta{ font-size:12.5px; color:var(--muted); line-height:1.45; margin-top:2px; }
+  .btn-choose{
+    flex:none; background:var(--pink); color:#fff; border:none; border-radius:12px; padding:12px 18px;
+    font-family:var(--body); font-weight:700; font-size:14px; cursor:pointer;
+  }
   .filter-row{ display:flex; gap:8px; margin:0 20px 12px; }
   .filter-row .field-input{ flex:1; padding:9px 12px; font-size:13px; }
 
@@ -649,8 +687,10 @@
           <span class="field-label">Restaurant (optionnel)</span>
           <input class="field-input" id="planRestaurant" placeholder="Tape 3 lettres : les vrais restaurants du quartier s'affichent" autocomplete="off" oninput="refreshPlanMap()">
           <div class="venue-suggest" id="planVenueSuggest"></div>
-          <iframe class="gmaps-embed" id="planMapsEmbed" src="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-          <a class="venue-swap" id="planMapsLink" href="#" target="_blank" rel="noopener" style="margin-top:10px;" onclick="return prepPlanMapsLink(this);">&#128269; Ouvrir en plein &eacute;cran sur Google Maps</a>
+          <div class="gmaps-wrap" onclick="openMapFull('planRestaurant')">
+            <iframe class="gmaps-embed" id="planMapsEmbed" src="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+            <span class="gmaps-hint">&#128506;&#65039; Toucher pour agrandir, zoomer et choisir</span>
+          </div>
         </div>
         <div class="field-group">
           <span class="field-label">Ton intention</span>
@@ -795,8 +835,10 @@
           <h4>Lieu propos&eacute;</h4>
           <input class="field-input" id="venueName" placeholder="Tape 3 lettres : les vrais restaurants du quartier s'affichent" autocomplete="off" oninput="refreshConfirmMap()">
           <div class="venue-suggest" id="confirmVenueSuggest"></div>
-          <iframe class="gmaps-embed" id="confirmMapsEmbed" src="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-          <a class="venue-swap" id="confirmMapsLink" href="#" target="_blank" rel="noopener" style="margin-top:10px;" onclick="return prepConfirmMapsLink(this);">&#128269; Ouvrir en plein &eacute;cran sur Google Maps</a>
+          <div class="gmaps-wrap" onclick="openMapFull('venueName')">
+            <iframe class="gmaps-embed" id="confirmMapsEmbed" src="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+            <span class="gmaps-hint">&#128506;&#65039; Toucher pour agrandir, zoomer et choisir</span>
+          </div>
         </div>
         <div class="sheet-section">
           <h4>Heure</h4>
@@ -977,6 +1019,22 @@
       </div>
       <div class="editor-foot">
         <button class="save-btn" onclick="saveProfile()">Enregistrer mon profil</button>
+      </div>
+    </div>
+
+    <div class="mapfull" id="mapFull">
+      <div class="mapfull-top">
+        <input class="mapfull-search" id="mapSearch" placeholder="Restaurant, cuisine, quartier&hellip;" autocomplete="off">
+        <button class="mapfull-close" onclick="closeMapFull()" aria-label="Fermer la carte">&#10005;</button>
+      </div>
+      <div class="mapfull-canvas" id="mapCanvas"></div>
+      <div class="mapfull-state" id="mapState">Chargement de la carte&hellip;</div>
+      <div class="mapfull-pick" id="mapPick">
+        <div class="mapfull-pick-body">
+          <div class="mapfull-pick-name" id="mapPickName"></div>
+          <div class="mapfull-pick-meta" id="mapPickMeta"></div>
+        </div>
+        <button class="btn-choose" onclick="esChooseMapPlace()">Choisir</button>
       </div>
     </div>
 
@@ -1170,7 +1228,6 @@ function openConfirmFor(name){
   const p = personByName(name);
   document.getElementById('confirmWith').textContent = 'avec ' + name;
   document.getElementById('venueName').value = (p && p.venue) ? p.venue.name : '';
-  prepConfirmMapsLink(document.getElementById('confirmMapsLink'));
   document.getElementById('timeRow').innerHTML = times.map(t=>`<div class="chip ${t===selectedTime?'active':''}" onclick="pickTime(this,'${t}')">${t}</div>`).join('');
   document.getElementById('sheetProfileView').style.display = 'none';
   document.getElementById('sheetConfirmView').style.display = 'block';
@@ -1959,6 +2016,143 @@ function esBindVenueSearch(inputId, suggestId, nearFn, afterPick){
   input.addEventListener('blur', () => setTimeout(close, 180));
 }
 
+/* ===================== CARTE PLEIN ÉCRAN =====================
+   L'aperçu en iframe ne sert qu'à l'image : on ne peut ni zoomer ni choisir
+   dedans. Le vrai travail se fait ici, avec l'API JavaScript de Google Maps,
+   chargée seulement au premier ouvertures pour ne pas consommer de quota. */
+const MAPF = { map:null, markers:[], target:null, place:null, timer:null, infoTitle:null };
+let gmapsPromise = null;
+
+function esLoadGMaps(){
+  if(gmapsPromise) return gmapsPromise;
+  gmapsPromise = new Promise((resolve, reject) => {
+    if(!ES_MAPS_KEY){ reject(new Error('cle absente')); return; }
+    if(window.google && window.google.maps){ resolve(); return; }
+    window.esGMapsReady = () => resolve();
+    const sc = document.createElement('script');
+    sc.async = true;
+    sc.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(ES_MAPS_KEY) +
+             '&v=weekly&language=fr&region=FR&loading=async&libraries=maps,places&callback=esGMapsReady';
+    sc.onerror = () => reject(new Error('chargement impossible'));
+    document.head.appendChild(sc);
+  });
+  return gmapsPromise;
+}
+
+function esMapState(txt){
+  const el = document.getElementById('mapState');
+  el.textContent = txt || '';
+  el.style.display = txt ? 'block' : 'none';
+}
+
+function esMapZone(){
+  const c = document.getElementById('locCity'), a = document.getElementById('locArea');
+  return [a && a.value.trim(), c && c.value.trim()].filter(Boolean).join(' ') || 'Lyon';
+}
+
+async function openMapFull(targetId){
+  MAPF.target = targetId || 'planRestaurant';
+  MAPF.place = null;
+  document.getElementById('mapPick').classList.remove('open');
+  document.getElementById('mapFull').classList.add('open');
+  const champ = document.getElementById('mapSearch');
+  const choisi = document.getElementById(MAPF.target);
+  champ.value = (choisi && choisi.value.trim()) || '';
+  esMapState('Chargement de la carte\u2026');
+  try{
+    await esLoadGMaps();
+  }catch(e){
+    esMapState("La carte n'a pas pu se charger. Vérifie ta connexion, ou tape le nom du restaurant à la main.");
+    return;
+  }
+  if(!MAPF.map){
+    MAPF.map = new google.maps.Map(document.getElementById('mapCanvas'), {
+      center: {lat:45.7578, lng:4.8320},   // Lyon par défaut, recentré dès la première recherche
+      zoom: 14, mapTypeControl:false, streetViewControl:false, fullscreenControl:false,
+      clickableIcons:false, gestureHandling:'greedy',
+    });
+  }
+  esMapState('');
+  esMapSearch(champ.value || ('restaurant ' + esMapZone()));
+}
+
+function closeMapFull(){
+  document.getElementById('mapFull').classList.remove('open');
+}
+
+function esClearMarkers(){
+  MAPF.markers.forEach(m => m.setMap(null));
+  MAPF.markers = [];
+}
+
+async function esMapSearch(texte){
+  const q = (texte || '').trim();
+  if(!MAPF.map || q.length < 2) return;
+  esMapState('Recherche\u2026');
+  let places = [];
+  try{
+    const lib = await google.maps.importLibrary('places');
+    const centre = MAPF.map.getCenter();
+    const res = await lib.Place.searchByText({
+      textQuery: q + (/\b(restaurant|bar|caf|brasserie|bistro)/i.test(q) ? '' : ' ' + esMapZone()),
+      fields: ['id','displayName','formattedAddress','location','rating','primaryTypeDisplayName'],
+      locationBias: { center: centre, radius: 5000 },
+      language: 'fr', region: 'fr', maxResultCount: 15,
+    });
+    places = res.places || [];
+  }catch(e){
+    esMapState("Recherche indisponible pour l'instant.");
+    return;
+  }
+  esClearMarkers();
+  if(!places.length){ esMapState('Aucun résultat. Essaie un autre mot.'); return; }
+  esMapState('');
+  const bounds = new google.maps.LatLngBounds();
+  places.forEach(pl => {
+    if(!pl.location) return;
+    const m = new google.maps.Marker({
+      map: MAPF.map, position: pl.location,
+      title: (pl.displayName || ''),
+    });
+    m.addListener('click', () => esSelectMapPlace(pl, m));
+    MAPF.markers.push(m);
+    bounds.extend(pl.location);
+  });
+  if(!bounds.isEmpty()){
+    MAPF.map.fitBounds(bounds, 60);
+    if(places.length === 1) MAPF.map.setZoom(16);
+  }
+  if(places.length === 1) esSelectMapPlace(places[0], MAPF.markers[0]);
+}
+
+function esSelectMapPlace(pl, marker){
+  MAPF.place = pl;
+  MAPF.markers.forEach(m => m.setAnimation(null));
+  if(marker && google.maps.Animation) marker.setAnimation(google.maps.Animation.BOUNCE);
+  setTimeout(() => { if(marker) marker.setAnimation(null); }, 900);
+  document.getElementById('mapPickName').textContent = pl.displayName || 'Ce lieu';
+  const type = pl.primaryTypeDisplayName || '';
+  const note = pl.rating ? ' \u00b7 \u2605 ' + pl.rating : '';
+  document.getElementById('mapPickMeta').textContent =
+    [type, pl.formattedAddress || ''].filter(Boolean).join(' \u00b7 ') + note;
+  document.getElementById('mapPick').classList.add('open');
+  if(pl.location) MAPF.map.panTo(pl.location);
+}
+
+function esChooseMapPlace(){
+  const pl = MAPF.place;
+  if(!pl) return;
+  const champ = document.getElementById(MAPF.target);
+  if(champ){
+    champ.value = pl.displayName || champ.value;
+    champ.setAttribute('data-address', pl.formattedAddress || '');
+    champ.setAttribute('data-place-id', pl.id || '');
+  }
+  closeMapFull();
+  if(MAPF.target === 'planRestaurant') refreshPlanMap(); else refreshConfirmMap();
+  showToast((pl.displayName || 'Lieu') + ' s\u00e9lectionn\u00e9');
+}
+
 function buildMapsQuery(mealKey, city, area, venue){
   // une adresse complète choisie dans la liste se suffit : y recoller la ville
   // ne ferait que brouiller la recherche
@@ -1967,9 +2161,6 @@ function buildMapsQuery(mealKey, city, area, venue){
     return v.indexOf(',') !== -1 ? v : v + ' ' + city;
   }
   return 'restaurant ' + (MEAL_WORD[mealKey] || 'dîner') + ' ' + (area ? area + ' ' : '') + city;
-}
-function buildMapsUrl(mealKey, city, area, venue){
-  return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(buildMapsQuery(mealKey, city, area, venue).trim());
 }
 function buildMapsEmbedUrl(mealKey, city, area, venue){
   return 'https://www.google.com/maps?q=' + encodeURIComponent(buildMapsQuery(mealKey, city, area, venue).trim()) + '&output=embed';
@@ -1995,23 +2186,6 @@ function refreshConfirmMap(){
   const mealKey = activeChip ? activeChip.getAttribute('data-i') : 'diner';
   const venue = document.getElementById('venueName').value.trim();
   document.getElementById('confirmMapsEmbed').src = buildMapsEmbedUrl(mealKey, city, area, venue);
-}
-function prepPlanMapsLink(a){
-  const city = document.getElementById('locCity').value.trim() || 'Lyon';
-  const area = document.getElementById('locArea').value.trim();
-  const mealKey = getActiveChipKey('planMealGroup');
-  const venue = document.getElementById('planRestaurant').value.trim();
-  a.href = buildMapsUrl(mealKey, city, area, venue);
-  return true;
-}
-function prepConfirmMapsLink(a){
-  const city = document.getElementById('locCity') ? (document.getElementById('locCity').value.trim() || 'Lyon') : 'Lyon';
-  const area = document.getElementById('locArea') ? document.getElementById('locArea').value.trim() : '';
-  const activeChip = document.querySelector('.intent-select .chip.active');
-  const mealKey = activeChip ? activeChip.getAttribute('data-i') : 'diner';
-  const venue = document.getElementById('venueName').value.trim();
-  a.href = buildMapsUrl(mealKey, city, area, venue);
-  return true;
 }
 
 /* Ton propre plan : la liste "Plans à venir" ne montre que ceux des autres,
@@ -2847,6 +3021,18 @@ async function initLiveMode(){
   esPollPlans();
   setInterval(esPollPlans, 4000);
 }
+(() => {
+  const champ = document.getElementById('mapSearch');
+  if(!champ) return;
+  champ.addEventListener('input', () => {
+    clearTimeout(MAPF.timer);
+    MAPF.timer = setTimeout(() => esMapSearch(champ.value), 500);
+  });
+  champ.addEventListener('keydown', e => {
+    if(e.key === 'Enter'){ e.preventDefault(); clearTimeout(MAPF.timer); esMapSearch(champ.value); }
+  });
+})();
+
 esBindVenueSearch('planRestaurant', 'planVenueSuggest',
   () => [document.getElementById('locArea').value.trim(),
          document.getElementById('locCity').value.trim()].filter(Boolean).join(' '),
