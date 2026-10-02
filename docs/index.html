@@ -172,9 +172,9 @@
     background:var(--pink); color:#fff; font-family:var(--body); font-weight:700; font-size:15px;
     cursor:pointer; box-shadow:0 10px 30px color-mix(in srgb, var(--pink) 40%, transparent);
   }
-  .splash-ghost{
-    background:none; border:none; color:var(--muted); font-size:13px; font-weight:600; cursor:pointer;
-    text-decoration:underline; text-underline-offset:3px;
+  .splash-cta.ghost{
+    background:transparent; color:var(--white); border:1.5px solid var(--line); box-shadow:none;
+    margin-top:10px;
   }
   .theme-picker{ margin-top:30px; width:100%; max-width:300px; }
   .theme-picker-label{ font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--muted); margin-bottom:12px; }
@@ -568,7 +568,7 @@
         <div class="splash-tag">Je suis seul, mais je ne veux pas manger seul.</div>
         <div class="splash-sub">Trouve quelqu'un de dispo pr&egrave;s de toi, l&agrave; maintenant &mdash; caf&eacute;, d&eacute;jeuner, d&icirc;ner ou verre. Pas d'&eacute;v&eacute;nement, pas d'attente.</div>
         <button class="splash-cta" onclick="openAuth('signup')">S'inscrire</button>
-        <button class="splash-ghost" onclick="openAuth('login')">J'ai d&eacute;j&agrave; un compte</button>
+        <button class="splash-cta ghost" onclick="openAuth('login')">Connexion</button>
 
         <div class="theme-picker">
           <div class="theme-picker-label">Ton ambiance</div>
@@ -1914,6 +1914,25 @@ async function afterLogin(){
   openEditor();
 }
 
+/* Rester connecté : on ne redemande pas l'email et le mot de passe à chaque
+   ouverture. Le jeton Supabase se rafraîchit en arrière-plan, sans retarder
+   l'entrée dans l'app. */
+async function esAutoEnter(){
+  const acc = esAccount();
+  if(!acc || !acc.verified) return false;
+  const prof = esLocalProfile();
+  if(!prof || !prof.name) return false;
+  esRestoreProfileUI();
+  esSaveName(prof.name);
+  enterApp();
+  esSendPresence();
+  esRefreshToken().then(jeton => {
+    if(!jeton) return;
+    esPullProfileFromAccount().then(p => { if(p && p.name) esRestoreProfileUI(); });
+  });
+  return true;
+}
+
 function logout(){
   let id = null;
   try{ id = localStorage.getItem('es_live_id'); }catch(e){}
@@ -2084,7 +2103,21 @@ async function openMapFull(targetId){
     MAPF.map = new google.maps.Map(document.getElementById('mapCanvas'), {
       center: {lat:45.7578, lng:4.8320},   // Lyon par défaut, recentré dès la première recherche
       zoom: 14, mapTypeControl:false, streetViewControl:false, fullscreenControl:false,
-      clickableIcons:false, gestureHandling:'greedy',
+      clickableIcons:true, gestureHandling:'greedy',
+    });
+    // Les commerces déjà dessinés par Google sont cliquables : on récupère la
+    // fiche du lieu touché au lieu de laisser Google ouvrir sa propre bulle.
+    MAPF.map.addListener('click', async ev => {
+      if(!ev.placeId) return;
+      if(ev.stop) ev.stop();
+      try{
+        const lib = await google.maps.importLibrary('places');
+        const lieu = new lib.Place({ id: ev.placeId });
+        await lieu.fetchFields({ fields:['id','displayName','formattedAddress','location','rating','primaryTypeDisplayName'] });
+        esSelectMapPlace(lieu, null);
+      }catch(e){
+        showToast("Ce lieu n'a pas pu être chargé");
+      }
     });
   }
   esMapState('');
@@ -2359,6 +2392,7 @@ const LOGO_BLEND = { neon:'screen', golden:'multiply', night:'screen' };
 
 function setAppTheme(name){
   document.documentElement.setAttribute('data-app-theme', name);
+  try{ localStorage.setItem('es_theme', name); }catch(e){}
   document.querySelectorAll('.brand-logo, .splash-logo').forEach(img=>{
     img.src = LOGO_SRC[name];
     img.style.mixBlendMode = LOGO_BLEND[name];
@@ -2366,7 +2400,11 @@ function setAppTheme(name){
   document.querySelectorAll('.theme-swatch').forEach(b=>b.classList.remove('active'));
   document.getElementById('themeSwatch-'+name).classList.add('active');
 }
-setAppTheme('neon');
+(function(){
+  let choisi = 'neon';
+  try{ choisi = localStorage.getItem('es_theme') || 'neon'; }catch(e){}
+  setAppTheme(LOGO_SRC[choisi] ? choisi : 'neon');
+})();
 
 function enterApp(){
   document.getElementById('screen-splash').style.display = 'none';
@@ -3063,12 +3101,15 @@ esRestoreProfileUI();
 renderMyPlan();
 esRestorePlanForm();
 initLiveMode();
+let esReprise = false;
 try{
   if(sessionStorage.getItem('es_resume_login')){
     sessionStorage.removeItem('es_resume_login');
-    if(isLoggedIn()) afterLogin();
+    esReprise = true;
   }
 }catch(e){}
+if(esReprise && isLoggedIn()) afterLogin();
+else esAutoEnter();
 </script>
 
 </body>
